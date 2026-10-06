@@ -391,3 +391,185 @@ function setupSingleScreenNavigation() {
 }
 
 document.addEventListener("DOMContentLoaded", setupSingleScreenNavigation);
+
+
+/* Notification-driven surprises: a shared random pool + date-specific pools. */
+const SURPRISE_RANDOM = [
+  {type:"envelope", title:"Маленькое письмо", text:"Ничего срочного. Просто хотел, чтобы посреди твоего дня внезапно появилось моё «я тебя люблю».", action:"оставить себе"},
+  {type:"heart", title:"Один поцелуй через интернет", text:"Технически это невозможно. Поэтому я просто зарезервировал настоящий на твоё возвращение.", action:"забрать поцелуй"},
+  {type:"mission", title:"Квест от мужа", text:"Найди сегодня что-нибудь красивое или смешное, сфотографируй и потом покажи мне. Хочу увидеть кусочек твоего дня.", action:"выполню"},
+  {type:"envelope", title:"Проверка связи", text:"Если ты это читаешь — значит я снова сумел немного пробраться в твой день. Отлично.", action:"обнять мужа мысленно"},
+  {type:"heart", title:"Ещё одно объятие", text:"Я положил его сюда заранее. Действительно выдать смогу только лично.", action:"забрать объятие"},
+  {type:"choice", title:"Выбери одну", text:"Сегодня без сложных решений. Просто ткни в одну карточку.", choices:["поцелуй в лоб","долгое объятие","вечер вдвоём"]},
+  {type:"mission", title:"Минутка для себя", text:"Остановись на минуту. Вода, еда, вдох-выдох. А потом продолжай спасать мир.", action:"сделано"},
+  {type:"envelope", title:"Секрет", text:"Я скучаю не по «событиям». Я скучаю по самым обычным вещам рядом с тобой.", action:"закрыть и улыбнуться"},
+  {type:"heart", title:"Семейная бухгалтерия", text:"Твой счёт снова пополнен. Проценты начисляются объятиями.", action:"+1 к долгу мужа"},
+  {type:"choice", title:"Что забираешь сегодня?", text:"Можно выбрать только одно. Остальное — при встрече.", choices:["чай вместе","обнимашки","ничего не делать вдвоём"]},
+  {type:"envelope", title:"Очень важное сообщение", text:"Ты красивая. Даже если устала. Даже если сейчас сама с этим споришь.", action:"ладно, принимаю"},
+  {type:"mission", title:"Небольшое задание", text:"Улыбнись прямо сейчас. Совсем чуть-чуть. Да, я серьёзно.", action:"улыбнулась"},
+  {type:"heart", title:"Из дома прилетело ♥", text:"Я сохранил для тебя место рядом. Оно вообще-то всегда твоё.", action:"забрать"},
+  {type:"envelope", title:"На всякий случай", text:"Если сегодня всё немного не так — день всё равно закончится. И станет ещё одним днём ближе к дому.", action:"запомню"},
+  {type:"choice", title:"Три маленьких обещания", text:"Выбирай, что получить первым после возвращения.", choices:["объятие","поцелуй","рассказ обо всём"]},
+  {type:"mission", title:"Сфоткай мне это", text:"Покажи мне сегодня одну обычную вещь из Барнаула, которую я бы сам точно не заметил.", action:"договорились"},
+  {type:"envelope", title:"Просто потому что", text:"Мне очень нравится наше «вместе». Даже когда несколько дней оно выглядит как два разных города.", action:"мне тоже"},
+  {type:"heart", title:"Скучаю", text:"Не драматично. По-семейному. По голосу, шагам, вещам рядом и твоему «ну Ива-а-ан».", action:"♥"},
+  {type:"choice", title:"Вечер после возвращения", text:"Какой первый спокойный вечер тебе сейчас хочется больше?", choices:["кино и еда","долго болтать","просто лежать рядом"]},
+  {type:"envelope", title:"Тук-тук", text:"Это муж напоминает: домой можно не спешить. Возвращайся спокойно. Я подожду сколько нужно.", action:"хорошо"},
+  {type:"mission", title:"Сохрани момент", text:"Если сегодня случится что-то хорошее — запомни одну деталь. Потом расскажешь мне её первой.", action:"сохраню"},
+  {type:"heart", title:"Ещё немного нас", text:"Каждый раз, когда ты сюда заходишь, расстояние не становится меньше. Но почему-то ощущается именно так.", action:"обнять"},
+  {type:"envelope", title:"Сообщение без причины", text:"Ты мой любимый человек. Вот и весь сложный смысл.", action:"прочитано ♥"},
+  {type:"choice", title:"Выбирай приз", text:"Все варианты настоящие и будут выданы после возвращения.", choices:["10 минут объятий","поцелуй без причины","завтрак/ужин от мужа"]}
+];
+
+const SURPRISE_BY_DAY = {
+  10:[
+    {type:"envelope",title:"На дорожку",text:"Ну вот, тот самый день. Береги себя в дороге и просто дай мне знать, когда нормально доберёшься. Всё остальное подождёт.",action:"обещаю"},
+    {type:"heart",title:"Первый долг",text:"Командировка только началась, а я уже должен тебе одно длинное объятие.",action:"записать в долг"},
+    {type:"mission",title:"Первый квест",text:"Когда устроишься, сфотографируй первое, что покажется тебе «вот теперь я точно в Барнауле». Потом покажешь мне.",action:"сделаю"},
+    {type:"choice",title:"Что взять с собой мысленно?",text:"Выбери одно. Я отправляю следом.",choices:["объятие","поцелуй в лоб","моё «всё будет хорошо»"]}
+  ],
+  11:[
+    {type:"envelope",title:"Первое утро далеко",text:"Наверное, сегодня расстояние ощущается сильнее всего. Но теперь таймер уже идёт в правильную сторону.",action:"идём дальше"},
+    {type:"mission",title:"Доброе утро от мужа",text:"Нормально позавтракай. Да, я специально сделал для этого интерактив на сайте.",action:"поем"},
+    {type:"heart",title:"Дом сообщает",text:"Без тебя здесь непривычно. Но твоё место никто не занимал.",action:"забрать сердечко"},
+    {type:"choice",title:"Сегодня тебе нужнее…",text:"Выбирай честно.",choices:["поддержка","смешинка","немного дома"]}
+  ],
+  12:[
+    {type:"envelope",title:"Уже не первый день",text:"Самое странное уже позади. Теперь это просто несколько дней, которые надо спокойно прожить.",action:"спокойно"},
+    {type:"heart",title:"Сегодняшняя норма",text:"Одно напоминание, что тебя очень ждут. И ещё одно, что тебя очень любят.",action:"принято"},
+    {type:"mission",title:"Покажи мне день",text:"Сделай одну фотографию не достопримечательности, а обычного сегодняшнего момента.",action:"сфоткаю"},
+    {type:"choice",title:"Когда вернёшься…",text:"Что делаем первым?",choices:["едим что-нибудь вкусное","долго обнимаемся","болтаем до ночи"]}
+  ],
+  13:[
+    {type:"envelope",title:"Почти середина",text:"Мы уже почти в той точке, где правильнее говорить не «ты недавно уехала», а «ты скоро вернёшься».",action:"так лучше"},
+    {type:"heart",title:"+1 день к дому",text:"Сегодняшний день автоматически конвертируется в один день ближе ко мне.",action:"зачислить"},
+    {type:"mission",title:"Внутренний прикол дня",text:"Если сегодня произойдёт что-то абсурдное — запомни. Нам нужен новый семейный мем.",action:"буду следить"},
+    {type:"choice",title:"Мини-награда",text:"За половину пути полагается бонус.",choices:["2 объятия","2 поцелуя","право ворчать 10 минут"]}
+  ],
+  14:[
+    {type:"envelope",title:"Половина позади",text:"Всё. Теперь возвращение ближе, чем отъезд. Очень приятная математика.",action:"люблю такую математику"},
+    {type:"heart",title:"Точка перелома ♥",text:"С этого момента каждый взгляд на таймер должен радовать чуть сильнее.",action:"проверить таймер"},
+    {type:"mission",title:"Одна вещь про сегодня",text:"Запомни одну вещь, которую захочется рассказать мне первой, когда увидимся.",action:"есть такая"},
+    {type:"choice",title:"Что я должен приготовить к встрече?",text:"Выбирай.",choices:["объятия","вкусную еду","полный вечер без дел"]}
+  ],
+  15:[
+    {type:"envelope",title:"Уже можно говорить «скоро»",text:"Осталось так мало, что я начинаю мысленно планировать наш первый обычный вечер после твоего возвращения.",action:"я тоже"},
+    {type:"heart",title:"Скоро домой",text:"Кажется, слово «скоро» наконец перестало быть враньём.",action:"♥"},
+    {type:"mission",title:"Маленькая просьба",text:"Не пытайся впихнуть в последние дни всё сразу. Вернись ко мне не героем, а просто собой.",action:"договорились"},
+    {type:"choice",title:"Первый вечер",text:"Какой режим?",choices:["ничего не делать","всё обсудить","смотреть что-нибудь в обнимку"]}
+  ],
+  16:[
+    {type:"envelope",title:"Последняя ночь",text:"Завтра. Вот и всё главное слово на сегодня. Спокойно собирай вещи и ничего не забудь.",action:"завтра ♥"},
+    {type:"heart",title:"Осталась одна ночь",text:"Дальше уже почти не ожидание. Дальше — дорога домой.",action:"поехали"},
+    {type:"mission",title:"Перед возвращением",text:"Выбери одну фотографию из поездки, которую ты точно хочешь оставить в нашем архиве.",action:"выберу"},
+    {type:"choice",title:"Что первым при встрече?",text:"Решение практически юридически обязывающее.",choices:["обнять","поцеловать","сказать «ну наконец-то»"]}
+  ],
+  17:[
+    {type:"envelope",title:"Сегодня домой",text:"Семь дней закончились. Теперь не надо ничего считать — просто возвращайся ко мне.",action:"еду домой"},
+    {type:"heart",title:"Финальный долг",text:"Все накопленные объятия сегодня подлежат немедленному погашению.",action:"взыскать всё"},
+    {type:"mission",title:"Последний квест",text:"Добраться спокойно. Всё остальное сегодня сделаю я.",action:"договорились"},
+    {type:"choice",title:"Финальный выбор",text:"Хотя мы оба знаем правильный ответ.",choices:["домой","домой","домой ♥"]}
+  ]
+};
+
+function currentTripDay(date = now()){
+  if(date < CONFIG.departure || date >= CONFIG.tripEnd) return null;
+  return Math.min(17, Math.max(10, 10 + Math.floor((date - CONFIG.departure) / 86400000)));
+}
+
+function surpriseFromKey(key){
+  if(!key) return null;
+  if(key.startsWith("random-")){
+    const index = Number(key.split("-")[1]);
+    return SURPRISE_RANDOM[index % SURPRISE_RANDOM.length];
+  }
+  const match = key.match(/^day-(\d+)-(\d+)$/);
+  if(match){
+    const day = Number(match[1]), index = Number(match[2]);
+    const pool = SURPRISE_BY_DAY[day] || [];
+    return pool[index % Math.max(pool.length,1)] || null;
+  }
+  return null;
+}
+
+function surpriseShell(item, key){
+  const typeLabel = item.type === "mission" ? "маленькое задание" : item.type === "choice" ? "выбери сердцем" : item.type === "heart" ? "для тебя кое-что есть" : "письмо от мужа";
+  return `
+    <div class="surprise" data-surprise-key="${key}">
+      <div class="surprise-seal">♥</div>
+      <p class="eyebrow">${typeLabel}</p>
+      <h3>${item.title}</h3>
+      <p class="surprise-teaser">Я специально не написал всё в уведомлении.</p>
+      <button class="primary-button surprise-open" type="button">открыть</button>
+      <div class="surprise-reveal" hidden></div>
+    </div>`;
+}
+
+function renderSurpriseReveal(item){
+  if(item.type === "choice"){
+    return `<p class="surprise-text">${item.text}</p><div class="surprise-choices">${item.choices.map((choice,i)=>`<button type="button" data-choice="${i}">${choice}</button>`).join("")}</div><p class="surprise-result" aria-live="polite"></p>`;
+  }
+  const label = item.type === "heart" ? "♥" : item.type === "mission" ? "✓" : "от мужа";
+  return `<div class="surprise-mark">${label}</div><p class="surprise-text">${item.text}</p><button class="surprise-action" type="button">${item.action || "забрать с собой"}</button>`;
+}
+
+function openSurprise(key){
+  const item = surpriseFromKey(key);
+  if(!item) return;
+  openModal(surpriseShell(item,key));
+  const modal = $("contentModal");
+  const open = modal.querySelector(".surprise-open");
+  open.addEventListener("click",()=>{
+    const reveal = modal.querySelector(".surprise-reveal");
+    reveal.innerHTML = renderSurpriseReveal(item);
+    reveal.hidden = false;
+    open.hidden = true;
+    modal.querySelector(".surprise").classList.add("is-open");
+    if(navigator.vibrate) navigator.vibrate(35);
+
+    reveal.querySelectorAll("[data-choice]").forEach(button=>button.addEventListener("click",()=>{
+      reveal.querySelectorAll("[data-choice]").forEach(b=>b.classList.remove("is-picked"));
+      button.classList.add("is-picked");
+      reveal.querySelector(".surprise-result").textContent = `Выбрано: ${button.textContent}. Запомнил ♥`;
+      localStorage.setItem("trip-last-choice",button.textContent);
+    }));
+
+    const action = reveal.querySelector(".surprise-action");
+    if(action) action.addEventListener("click",()=>{
+      const count = Number(localStorage.getItem("trip-surprises-kept") || 0) + 1;
+      localStorage.setItem("trip-surprises-kept",count);
+      action.textContent = "сохранено ♥";
+      action.disabled = true;
+      showToast("Забрала с собой ♥");
+    });
+  });
+}
+
+function openIncomingSurprise(){
+  const params = new URLSearchParams(location.search);
+  const key = params.get("surprise");
+  if(!key) return;
+  setTimeout(()=>openSurprise(key),180);
+  try{ history.replaceState(null,"",location.pathname + location.hash); }catch(_){}
+}
+
+function pickNote(){
+  const day = currentTripDay();
+  const source = day && SURPRISE_BY_DAY[day]?.length
+    ? SURPRISE_BY_DAY[day].map(item=>item.text)
+    : NOTES;
+  let history = JSON.parse(localStorage.getItem("trip-note-history") || "[]");
+  const signature = day ? `day-${day}` : "random";
+  if(localStorage.getItem("trip-note-source") !== signature){
+    history = [];
+    localStorage.setItem("trip-note-source",signature);
+  }
+  const available = source.map((_,i)=>i).filter(i=>!history.includes(i));
+  const pool = available.length ? available : source.map((_,i)=>i);
+  const index = pool[Math.floor(Math.random()*pool.length)];
+  history = [index,...history.filter(i=>i!==index)].slice(0,Math.min(8,source.length));
+  localStorage.setItem("trip-note-history",JSON.stringify(history));
+  $("dailyNote").textContent = source[index];
+}
+
+document.addEventListener("DOMContentLoaded", openIncomingSurprise);
