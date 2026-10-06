@@ -103,7 +103,7 @@ public final class NotificationScheduler {
     private static void scheduleFixed(Context context) {
         int code = 1000;
         for (FixedNote note : FIXED) {
-            long when = atBarnaulTime(note.day, note.hour, note.minute);
+            long when = atLocalTime(note.day, note.hour, note.minute);
             if (when > System.currentTimeMillis()) {
                 schedule(
                         context,
@@ -142,7 +142,7 @@ public final class NotificationScheduler {
 
         int hour = minuteOfDay / 60;
         int minute = minuteOfDay % 60;
-        long when = atBarnaulTime(day, hour, minute);
+        long when = atLocalTime(day, hour, minute);
         if (when <= System.currentTimeMillis()) return;
 
         String title = RANDOM_TITLES[random.nextInt(RANDOM_TITLES.length)];
@@ -152,8 +152,8 @@ public final class NotificationScheduler {
         schedule(context, code, when, CHANNEL_LOVE, title, text, "home");
     }
 
-    private static long atBarnaulTime(int day, int hour, int minute) {
-        Calendar calendar = Calendar.getInstance(BARNAUL);
+    private static long atLocalTime(int day, int hour, int minute) {
+        Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
         calendar.clear();
         calendar.set(2026, Calendar.OCTOBER, day, hour, minute, 0);
         return calendar.getTimeInMillis();
