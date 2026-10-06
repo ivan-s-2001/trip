@@ -588,3 +588,19 @@ function openDailySurpriseOnce(){
 }
 
 document.addEventListener("DOMContentLoaded", openDailySurpriseOnce);
+
+
+function openRandomSurprise(){
+  let history = JSON.parse(localStorage.getItem("trip-surprise-history") || "[]");
+  const available = SURPRISE_RANDOM.map((_,i)=>i).filter(i=>!history.includes(i));
+  const pool = available.length ? available : SURPRISE_RANDOM.map((_,i)=>i);
+  const index = pool[Math.floor(Math.random()*pool.length)];
+  history = [index,...history.filter(i=>i!==index)].slice(0,12);
+  localStorage.setItem("trip-surprise-history",JSON.stringify(history));
+  openSurprise(`random-${index}`);
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const button = $("surpriseButton");
+  if(button) button.addEventListener("click",openRandomSurprise);
+});
