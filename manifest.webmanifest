@@ -1,0 +1,20 @@
+{
+  "name": "Пока тебя нет рядом",
+  "short_name": "Мы ♥",
+  "description": "Маленькое место, где расстояние каждый день становится короче.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f0e8",
+  "theme_color": "#f7f0e8",
+  "lang": "ru",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
