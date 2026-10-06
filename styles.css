@@ -141,3 +141,45 @@ h1 em,h2 em{color:var(--berry);font-weight:400}
 
 .note-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .note-actions .text-button{white-space:nowrap}
+
+/* Home UX: one clear next action, then two lightweight rituals. */
+.note-card{gap:10px}
+.now-button{
+  width:100%;min-height:58px;border:0;border-radius:18px;background:#fff;color:var(--berryDark);
+  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 13px;text-align:left;
+  box-shadow:0 8px 22px rgba(69,22,38,.12)
+}
+.now-button span{display:grid;gap:1px;min-width:0}
+.now-button small{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.now-button strong{font:21px/1 var(--serif);font-weight:400}
+.now-button b{
+  flex:0 0 36px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  background:var(--berry);color:#fff;font:18px/1 var(--serif)
+}
+.quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.quick-action{
+  min-width:0;min-height:52px;border:1px solid rgba(255,255,255,.28);border-radius:16px;
+  background:rgba(255,255,255,.08);color:#fff;padding:7px 8px;display:flex;align-items:center;gap:7px;text-align:left
+}
+.quick-action>span:last-child{display:grid;min-width:0}
+.quick-action strong{font-size:10px;line-height:1.05}
+.quick-action small{font-size:7px;opacity:.68;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quick-icon,.hold-ring{
+  flex:0 0 31px;width:31px;height:31px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.14);font:13px/1 var(--serif)
+}
+.hold-ring{position:relative;background:conic-gradient(#fff calc(var(--hold,0)*1turn),rgba(255,255,255,.15) 0)}
+.hold-ring::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--berry)}
+.hold-ring i{position:relative;z-index:1;font-style:normal;color:#fff;font-size:13px}
+.hug-action.is-holding{background:rgba(255,255,255,.14)}
+.hug-action.is-complete{background:rgba(255,255,255,.22)}
+.voice-card{background:linear-gradient(145deg,rgba(255,250,244,.94),rgba(235,220,224,.86))}
+
+@media (max-height:720px){
+  .hero-lead{display:none}
+  .countdown-card{padding:9px 11px}
+  .note-card{padding:12px 13px;gap:7px}
+  .note-card blockquote{font-size:18px;line-height:1.05;margin:5px 0;max-height:58px}
+  .now-button{min-height:50px;padding:8px 10px}.now-button strong{font-size:18px}
+  .quick-action{min-height:45px;padding:5px 6px}.quick-icon,.hold-ring{width:27px;height:27px;flex-basis:27px}
+}
