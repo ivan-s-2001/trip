@@ -138,3 +138,6 @@ h1 em,h2 em{color:var(--berry);font-weight:400}
 .surprise-choices button.is-picked{background:var(--berry);color:#fff;border-color:var(--berry)}
 .surprise-result{margin-top:10px!important;color:var(--berry)!important;font-weight:700}
 @keyframes surpriseIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.note-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.note-actions .text-button{white-space:nowrap}
