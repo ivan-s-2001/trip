@@ -573,3 +573,18 @@ function pickNote(){
 }
 
 document.addEventListener("DOMContentLoaded", openIncomingSurprise);
+
+
+function openDailySurpriseOnce(){
+  const params = new URLSearchParams(location.search);
+  if(params.has("surprise")) return;
+  const day = currentTripDay();
+  if(!day || !SURPRISE_BY_DAY[day]?.length) return;
+  const seenKey = `trip-daily-surprise-${day}`;
+  if(localStorage.getItem(seenKey)) return;
+  const index = (day * 7 + 3) % SURPRISE_BY_DAY[day].length;
+  localStorage.setItem(seenKey,"1");
+  setTimeout(()=>openSurprise(`day-${day}-${index}`),700);
+}
+
+document.addEventListener("DOMContentLoaded", openDailySurpriseOnce);
