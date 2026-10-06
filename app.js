@@ -563,7 +563,9 @@ function openIncomingSurprise(){
   const key = params.get("surprise");
   if(!key) return;
   setTimeout(()=>openSurprise(key),180);
-  try{ history.replaceState(null,"",location.pathname + location.hash); }catch(_){}
+  params.delete("surprise");
+  const rest = params.toString();
+  try{ history.replaceState(null,"",location.pathname + (rest ? "?" + rest : "") + location.hash); }catch(_){}
 }
 
 function pickNote(){
