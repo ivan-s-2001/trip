@@ -94,7 +94,7 @@ const DAYS = [
   {date:"13 октября", title:"Почти середина", text:"Смотри: часть дороги уже позади. Мы почти дошли до той точки, где правильнее говорить не «ты недавно уехала», а «ты уже скоро вернёшься». Мне нравится второй вариант гораздо больше."},
   {date:"14 октября", title:"Мы уже ближе", text:"Сегодня расстояние ощущается немного иначе. Потому что впереди осталось меньше, чем позади. Я приготовил тебе дома запас разговоров, объятий и бытовых мелочей, по которым неожиданно успел соскучиться."},
   {date:"15 октября", title:"Осталось совсем чуть-чуть", text:"Если сегодня будет длинный день — просто не торопи его. Пусть закончится сам. Завтра будет последний полноценный день этой поездки, а потом — домой."},
-  {date:"16 октября", title:"Последняя ночь", text:"Завтра. Вот и весь текст, который здесь действительно нужен. Завтра ты возвращаешься. Спокойно собирай вещи, ничего не забудь и оставь Барнаулу только хорошие воспоминания."},
+  {date:"16 октября", title:"5 лет с того дня", text:"Сегодня отдельная глава. Пять лет со дня нашего знакомства. [ТВОЙ ТЕКСТ ДЛЯ ГЛАВЫ ГОДОВЩИНЫ]"},
   {date:"17 октября", title:"Сегодня", text:"Семь дней закончились. Возвращайся ко мне. Я очень по тебе скучал и больше ничего умного сейчас писать не хочу."},
 ];
 
@@ -169,11 +169,20 @@ function updateCountdown() {
     document.title = "До грустного момента";
     $("tripProgressWrap").hidden = true;
   } else if (state === "away") {
-    $("heroEyebrow").textContent = "10—17 октября · Барнаул";
-    $("heroTitle").innerHTML = "До твоего<br><em>возвращения</em>";
-    $("heroLead").textContent = "Барнаул временно забрал тебя у меня. Но теперь таймер идёт в правильную сторону.";
-    $("countdownKicker").textContent = "осталось до дома";
-    document.title = "Возвращайся скорее ♥";
+    const isAnniversary = current.getFullYear() === 2026 && current.getMonth() === 9 && current.getDate() === 16;
+    if (isAnniversary) {
+      $("heroEyebrow").textContent = "16 октября · наш день";
+      $("heroTitle").innerHTML = "5 лет<br><em>с того дня</em>";
+      $("heroLead").textContent = "Сегодня здесь не просто ещё один день поездки. Сегодня — наша отдельная глава.";
+      $("countdownKicker").textContent = "а завтра ты уже дома";
+      document.title = "5 лет с того дня ♥";
+    } else {
+      $("heroEyebrow").textContent = "10—17 октября · Барнаул";
+      $("heroTitle").innerHTML = "До твоего<br><em>возвращения</em>";
+      $("heroLead").textContent = "Барнаул временно забрал тебя у меня. Но теперь таймер идёт в правильную сторону.";
+      $("countdownKicker").textContent = "осталось до дома";
+      document.title = "Возвращайся скорее ♥";
+    }
     $("tripProgressWrap").hidden = false;
   } else if (state === "return") {
     $("heroEyebrow").textContent = "17 октября · сегодня";
@@ -472,10 +481,14 @@ const SURPRISE_BY_DAY = {
     {type:"choice",title:"Первый вечер",text:"Какой режим?",choices:["ничего не делать","всё обсудить","смотреть что-нибудь в обнимку"]}
   ],
   16:[
-    {type:"envelope",title:"Последняя ночь",text:"Завтра. Вот и всё главное слово на сегодня. Спокойно собирай вещи и ничего не забудь.",action:"завтра ♥"},
-    {type:"heart",title:"Осталась одна ночь",text:"Дальше уже почти не ожидание. Дальше — дорога домой.",action:"поехали"},
-    {type:"mission",title:"Перед возвращением",text:"Выбери одну фотографию из поездки, которую ты точно хочешь оставить в нашем архиве.",action:"выберу"},
-    {type:"choice",title:"Что первым при встрече?",text:"Решение практически юридически обязывающее.",choices:["обнять","поцеловать","сказать «ну наконец-то»"]}
+    {type:"envelope",title:"5 лет с того дня",text:"[ТВОЙ ТЕКСТ: утреннее поздравление с годовщиной знакомства]",action:"открыть наш день"},
+    {type:"memory",title:"Как всё начиналось",text:"[ТВОЙ ТЕКСТ: первое знакомство / первое впечатление]",action:"вспомнить"},
+    {type:"photo",title:"Мы тогда",text:"[ТВОЙ ТЕКСТ К ФОТО: ранняя совместная фотография]",photo:"anniversary-01.jpg",action:"перевернуть фото"},
+    {type:"memory",title:"Один момент из этих пяти лет",text:"[ТВОЙ ТЕКСТ: конкретное важное воспоминание]",action:"оставить здесь"},
+    {type:"choice",title:"Пять лет — пять вещей",text:"[ТВОЙ ТЕКСТ: короткое вступление]",choices:["[вещь 1]","[вещь 2]","[вещь 3]"]},
+    {type:"heart",title:"Объятие на годовщину",text:"[ТВОЙ ТЕКСТ: короткая подпись к особому объятию]",action:"забрать объятие"},
+    {type:"voice",title:"Сегодня лучше услышать меня",text:"[ТВОЯ КОРОТКАЯ ПОДВОДКА К ГОЛОСОВОМУ]",audio:"voice-16.mp3",action:"включить голос"},
+    {type:"envelope",title:"Перед сном",text:"[ТВОЙ ТЕКСТ: 5 лет знакомства + завтра возвращение домой]",action:"до завтра ♥"}
   ],
   17:[
     {type:"envelope",title:"Сегодня домой",text:"Семь дней закончились. Теперь не надо ничего считать — просто возвращайся ко мне.",action:"еду домой"},
@@ -506,7 +519,14 @@ function surpriseFromKey(key){
 }
 
 function surpriseShell(item, key){
-  const typeLabel = item.type === "mission" ? "маленькое задание" : item.type === "choice" ? "выбери сердцем" : item.type === "heart" ? "для тебя кое-что есть" : "письмо от мужа";
+  const typeLabel =
+    item.type === "mission" ? "маленькое задание" :
+    item.type === "choice" ? "выбери сердцем" :
+    item.type === "heart" ? "для тебя кое-что есть" :
+    item.type === "photo" ? "одна наша фотография" :
+    item.type === "memory" ? "одна глава из нас" :
+    item.type === "voice" ? "сегодня лучше услышать" :
+    "письмо от мужа";
   return `
     <div class="surprise" data-surprise-key="${key}">
       <div class="surprise-seal">♥</div>
@@ -522,7 +542,15 @@ function renderSurpriseReveal(item){
   if(item.type === "choice"){
     return `<p class="surprise-text">${item.text}</p><div class="surprise-choices">${item.choices.map((choice,i)=>`<button type="button" data-choice="${i}">${choice}</button>`).join("")}</div><p class="surprise-result" aria-live="polite"></p>`;
   }
-  const label = item.type === "heart" ? "♥" : item.type === "mission" ? "✓" : "от мужа";
+  if(item.type === "photo"){
+    const src = `./assets/photos/${item.photo || "anniversary-01.jpg"}`;
+    return `<div class="anniversary-photo"><div class="memory-fallback"><strong>сюда вашу фотографию</strong></div><img src="${src}" alt="" onerror="this.style.display='none'"></div><p class="surprise-text">${item.text}</p><button class="surprise-action" type="button">${item.action || "оставить здесь"}</button>`;
+  }
+  if(item.type === "voice"){
+    const src = `./assets/audio/${item.audio || "voice-16.mp3"}`;
+    return `<p class="surprise-text">${item.text}</p><audio controls preload="metadata" src="${src}" style="width:100%"></audio>`;
+  }
+  const label = item.type === "heart" ? "♥" : item.type === "mission" ? "✓" : item.type === "memory" ? "∞" : "от мужа";
   return `<div class="surprise-mark">${label}</div><p class="surprise-text">${item.text}</p><button class="surprise-action" type="button">${item.action || "забрать с собой"}</button>`;
 }
 
