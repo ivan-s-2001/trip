@@ -128,8 +128,39 @@ public final class NotificationScheduler {
             int minute = minuteOfDay % 60;
             long when = atLocalTime(day, hour, minute);
 
-            // Чередуем: подготовленный пул дня / общий случайный пул.
-            if (slot % 2 == 0) {
+            // 16 октября — отдельный сценарий годовщины: все 8 касаний подготовлены вручную.
+            if (day == 16) {
+                String[] anniversaryTitles = {
+                        "Сегодня наш день ♥",
+                        "Как всё начиналось",
+                        "Одна наша фотография",
+                        "Пять лет — один момент",
+                        "Пять вещей за пять лет",
+                        "Объятие на годовщину",
+                        "Сегодня лучше услышать меня",
+                        "Перед сном — только для тебя"
+                };
+                String[] anniversaryTeasers = {
+                        "Сегодня здесь будет немного больше нас, чем обычно.",
+                        "Хочу вернуть тебя на пять лет назад. Откроешь?",
+                        "Я выбрал для этого дня одну фотографию.",
+                        "Есть один момент, который я хочу оставить именно сегодня.",
+                        "Пять лет — хороший повод кое-что вспомнить.",
+                        "Это объятие сегодня особенное.",
+                        "Некоторые вещи лучше не читать, а услышать.",
+                        "Последняя карточка нашего дня. Открой вечером ♥"
+                };
+                scheduleIfFuture(
+                        context,
+                        5000 + day * 10 + slot,
+                        when,
+                        CHANNEL_TRIP,
+                        anniversaryTitles[slot],
+                        anniversaryTeasers[slot],
+                        "home",
+                        "day-16-" + slot
+                );
+            } else if (slot % 2 == 0) {
                 int dayPoolIndex = slot / 2; // 0..3
                 int titleIndex = dayPoolIndex % PREPARED_TITLES.length;
                 scheduleIfFuture(
