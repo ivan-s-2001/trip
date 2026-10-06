@@ -16,7 +16,21 @@ import java.util.TimeZone;
 public final class NotificationScheduler {
     public static final String CHANNEL_LOVE = "love_notes";
     public static final String CHANNEL_TRIP = "trip_moments";
+
     private static final int RANDOM_POOL_SIZE = 24;
+    private static final int JITTER_MINUTES = 18;
+
+    // 8 почти равномерных окон с 09:15 до 21:30.
+    private static final int[] BASE_MINUTES = {
+            9 * 60 + 15,
+            11 * 60,
+            12 * 60 + 45,
+            14 * 60 + 30,
+            16 * 60 + 15,
+            18 * 60,
+            19 * 60 + 45,
+            21 * 60 + 30
+    };
 
     private static final String[] RANDOM_TITLES = {
             "Тук-тук. Это муж ♥",
@@ -24,7 +38,9 @@ public final class NotificationScheduler {
             "Не буду писать всё здесь",
             "Маленький сюрприз внутри",
             "Зайди на минутку ♥",
-            "Есть кое-что только для тебя"
+            "Есть кое-что только для тебя",
+            "Я опять кое-что придумал",
+            "Одно маленькое «от мужа»"
     };
 
     private static final String[] RANDOM_TEASERS = {
@@ -33,19 +49,23 @@ public final class NotificationScheduler {
             "Там внутри кое-что милое. Больше спойлерить не буду.",
             "Одно нажатие — и узнаешь, что я опять придумал.",
             "У тебя новое маленькое «от мужа».",
-            "Я специально оставил самое важное внутри приложения."
+            "Я специально оставил самое важное внутри приложения.",
+            "Не спойлерю. Просто открой, когда будет минутка.",
+            "Тут есть кое-что, что лучше увидеть внутри ♥"
     };
 
-    private static final PreparedNote[] PREPARED = {
-            new PreparedNote(9, 21, 30, "До грустного момента совсем чуть-чуть", "Я кое-что оставил тебе на вечер ♥", "home", "random-0"),
-            new PreparedNote(10, 8, 45, "Сегодня тот самый день", "Не буду всё писать здесь. Открой, когда будет минутка ♥", "home", "day-10-0"),
-            new PreparedNote(11, 9, 15, "Первое утро далеко", "У меня есть для тебя кое-что именно на сегодня.", "home", "day-11-0"),
-            new PreparedNote(12, 20, 15, "Вечерняя записка от мужа", "День почти закончился. Зайди на минутку ♥", "home", "day-12-1"),
-            new PreparedNote(13, 13, 0, "Мы уже почти у середины", "Открой — там немного приятной математики.", "home", "day-13-0"),
-            new PreparedNote(14, 18, 30, "Половина позади ♥", "Для этого момента я кое-что приготовил.", "home", "day-14-0"),
-            new PreparedNote(15, 11, 30, "Уже можно говорить «скоро»", "Зайди. Сегодня внутри особенно хорошее слово.", "home", "day-15-0"),
-            new PreparedNote(16, 21, 15, "Последняя ночь", "Тут сообщение, которое я хотел оставить именно сегодня.", "home", "day-16-0"),
-            new PreparedNote(17, 8, 30, "Сегодня домой ♥", "Последний сюрприз этой поездки уже ждёт внутри.", "home", "day-17-0")
+    private static final String[] PREPARED_TITLES = {
+            "Утреннее от мужа ♥",
+            "На сегодня кое-что есть",
+            "Маленькая записка на день",
+            "Вечернее — только для тебя"
+    };
+
+    private static final String[] PREPARED_TEASERS = {
+            "Это приготовлено именно на сегодняшний день. Откроешь?",
+            "Не хочу писать всё в шторке уведомлений. Зайди ♥",
+            "Сегодняшний сюрприз уже ждёт внутри.",
+            "Оставил тебе кое-что на этот вечер. Без спойлеров."
     };
 
     private NotificationScheduler() {}
@@ -79,59 +99,79 @@ public final class NotificationScheduler {
     }
 
     public static void scheduleAll(Context context) {
-        schedulePrepared(context);
-        scheduleRandom(context);
-    }
+        // Один небольшой тизер вечером накануне.
+        scheduleIfFuture(
+                context,
+                900,
+                atLocalTime(9, 21, 20),
+                CHANNEL_TRIP,
+                "Завтра тот самый день",
+                "Я кое-что приготовил на всю неделю. Пока только маленький спойлер ♥",
+                "home",
+                "random-0"
+        );
 
-    private static void schedulePrepared(Context context) {
-        int code = 1000;
-        for (PreparedNote note : PREPARED) {
-            long when = atLocalTime(note.day, note.hour, note.minute);
-            if (when > System.currentTimeMillis()) {
-                schedule(
-                        context,
-                        code,
-                        when,
-                        CHANNEL_TRIP,
-                        note.title,
-                        note.text,
-                        note.screen,
-                        note.surprise
-                );
-            }
-            code++;
+        // 10–17 октября: ровно 8 уведомлений на день.
+        for (int day = 10; day <= 17; day++) {
+            scheduleEightForDay(context, day);
         }
     }
 
-    private static void scheduleRandom(Context context) {
-        for (int day = 10; day <= 16; day++) {
-            long seed = 20261026L + day * 997L;
-            Random random = new Random(seed);
+    private static void scheduleEightForDay(Context context, int day) {
+        Random timingRandom = new Random(20261010L + day * 1009L);
+        Random contentRandom = new Random(1701L + day * 7919L);
 
-            int startMinute = 14 * 60;
-            int endMinute = 20 * 60 + 30;
-            int minuteOfDay = startMinute + random.nextInt(endMinute - startMinute + 1);
+        for (int slot = 0; slot < BASE_MINUTES.length; slot++) {
+            int jitter = timingRandom.nextInt(JITTER_MINUTES * 2 + 1) - JITTER_MINUTES;
+            int minuteOfDay = BASE_MINUTES[slot] + jitter;
             int hour = minuteOfDay / 60;
             int minute = minuteOfDay % 60;
             long when = atLocalTime(day, hour, minute);
 
-            if (when <= System.currentTimeMillis()) continue;
-
-            int contentIndex = random.nextInt(RANDOM_POOL_SIZE);
-            String title = RANDOM_TITLES[random.nextInt(RANDOM_TITLES.length)];
-            String teaser = RANDOM_TEASERS[random.nextInt(RANDOM_TEASERS.length)];
-
-            schedule(
-                    context,
-                    2000 + day,
-                    when,
-                    CHANNEL_LOVE,
-                    title,
-                    teaser,
-                    "home",
-                    "random-" + contentIndex
-            );
+            // Чередуем: подготовленный пул дня / общий случайный пул.
+            if (slot % 2 == 0) {
+                int dayPoolIndex = slot / 2; // 0..3
+                int titleIndex = dayPoolIndex % PREPARED_TITLES.length;
+                scheduleIfFuture(
+                        context,
+                        3000 + day * 10 + slot,
+                        when,
+                        CHANNEL_TRIP,
+                        day == 17 && dayPoolIndex == 0 ? "Сегодня домой ♥" : PREPARED_TITLES[titleIndex],
+                        PREPARED_TEASERS[titleIndex],
+                        "home",
+                        "day-" + day + "-" + dayPoolIndex
+                );
+            } else {
+                int randomIndex = contentRandom.nextInt(RANDOM_POOL_SIZE);
+                int titleIndex = contentRandom.nextInt(RANDOM_TITLES.length);
+                int teaserIndex = contentRandom.nextInt(RANDOM_TEASERS.length);
+                scheduleIfFuture(
+                        context,
+                        4000 + day * 10 + slot,
+                        when,
+                        CHANNEL_LOVE,
+                        RANDOM_TITLES[titleIndex],
+                        RANDOM_TEASERS[teaserIndex],
+                        "home",
+                        "random-" + randomIndex
+                );
+            }
         }
+    }
+
+    private static void scheduleIfFuture(
+            Context context,
+            int requestCode,
+            long when,
+            String channel,
+            String title,
+            String text,
+            String screen,
+            String surprise
+    ) {
+        if (when <= System.currentTimeMillis()) return;
+        schedule(context, requestCode, when, channel, title, text, screen, surprise);
     }
 
     private static long atLocalTime(int day, int hour, int minute) {
@@ -170,37 +210,17 @@ public final class NotificationScheduler {
         );
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pendingIntent);
+            alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    when,
+                    pendingIntent
+            );
         } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, when, pendingIntent);
-        }
-    }
-
-    private static final class PreparedNote {
-        final int day;
-        final int hour;
-        final int minute;
-        final String title;
-        final String text;
-        final String screen;
-        final String surprise;
-
-        PreparedNote(
-                int day,
-                int hour,
-                int minute,
-                String title,
-                String text,
-                String screen,
-                String surprise
-        ) {
-            this.day = day;
-            this.hour = hour;
-            this.minute = minute;
-            this.title = title;
-            this.text = text;
-            this.screen = screen;
-            this.surprise = surprise;
+            alarmManager.set(
+                    AlarmManager.RTC_WAKEUP,
+                    when,
+                    pendingIntent
+            );
         }
     }
 }
