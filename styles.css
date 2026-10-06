@@ -156,7 +156,7 @@ h1 em,h2 em{color:var(--berry);font-weight:400}
   flex:0 0 36px;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
   background:var(--berry);color:#fff;font:18px/1 var(--serif)
 }
-.quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:7px}
 .quick-action{
   min-width:0;min-height:52px;border:1px solid rgba(255,255,255,.28);border-radius:16px;
   background:rgba(255,255,255,.08);color:#fff;padding:7px 8px;display:flex;align-items:center;gap:7px;text-align:left
