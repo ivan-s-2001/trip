@@ -123,3 +123,18 @@ h1 em,h2 em{color:var(--berry);font-weight:400}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 .download-link{display:block;text-align:center;text-decoration:none}
 .android-card{background:linear-gradient(145deg,rgba(255,250,244,.92),rgba(239,228,215,.92))}
+
+.surprise{text-align:center;padding-top:6px}
+.surprise-seal{width:64px;height:64px;margin:2px auto 14px;border-radius:50%;display:grid;place-items:center;background:var(--berry);color:#fff;font:30px/1 var(--serif);box-shadow:0 12px 30px rgba(143,51,77,.22)}
+.surprise h3{font-size:36px!important;margin-bottom:8px!important}
+.surprise-teaser{max-width:280px;margin:0 auto 14px!important}
+.surprise-reveal{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);animation:surpriseIn .28s ease both}
+.surprise-mark{width:46px;height:46px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:var(--paper2);color:var(--berry);font:22px var(--serif)}
+.surprise-text{font:22px/1.18 var(--serif)!important;color:var(--ink)!important;margin:0 0 14px!important}
+.surprise-action{border:0;border-radius:999px;background:var(--berry);color:#fff;padding:11px 16px;min-height:44px}
+.surprise-action:disabled{opacity:.62}
+.surprise-choices{display:grid;gap:8px;margin-top:12px}
+.surprise-choices button{min-height:46px;border:1px solid var(--line);border-radius:14px;background:var(--paper);padding:10px 12px}
+.surprise-choices button.is-picked{background:var(--berry);color:#fff;border-color:var(--berry)}
+.surprise-result{margin-top:10px!important;color:var(--berry)!important;font-weight:700}
+@keyframes surpriseIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
