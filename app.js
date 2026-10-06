@@ -267,7 +267,19 @@ function renderReasons() {
 
 function openModal(html) {
   $("modalContent").innerHTML = `<div class="modal-inner">${html}</div>`;
-  $("contentModal").showModal();
+  if (!$("contentModal").open) {
+    try { history.pushState({tripModal:true}, ""); } catch (_) {}
+    $("contentModal").showModal();
+  }
+}
+
+function closeModal() {
+  if (!$("contentModal").open) return;
+  if (history.state && history.state.tripModal) {
+    history.back();
+  } else {
+    $("contentModal").close();
+  }
 }
 
 function bindCards() {
@@ -343,8 +355,9 @@ function init() {
   registerVisit(); pickNote(); updateCountdown(); setupHugs(); bindCards(); setupPhotos(); setupInstall(); setupServiceWorker();
   $("anotherNote").addEventListener("click", () => { pickNote(); showToast("Новая записка ♥"); });
   $("randomMemoryButton").addEventListener("click", () => { $("randomMemory").textContent = RANDOM_MEMORIES[Math.floor(Math.random()*RANDOM_MEMORIES.length)]; });
-  $("modalClose").addEventListener("click", () => $("contentModal").close());
-  $("contentModal").addEventListener("click", e => { if (e.target === $("contentModal")) $("contentModal").close(); });
+  $("modalClose").addEventListener("click", closeModal);
+  $("contentModal").addEventListener("click", e => { if (e.target === $("contentModal")) closeModal(); });
+  window.addEventListener("popstate", () => { if ($("contentModal").open) $("contentModal").close(); });
   setupReveal(); setInterval(updateCountdown, 1000);
 }
 
@@ -579,12 +592,17 @@ function openDailySurpriseOnce(){
   const params = new URLSearchParams(location.search);
   if(params.has("surprise")) return;
   const day = currentTripDay();
-  if(!day || !SURPRISE_BY_DAY[day]?.length) return;
+  const status = $("surpriseStatus");
+  const label = $("surpriseButtonLabel");
+  if(!day || !SURPRISE_BY_DAY[day]?.length){
+    if(status) status.textContent = "маленькая случайность";
+    if(label) label.textContent = "открыть сюрприз";
+    return;
+  }
   const seenKey = `trip-daily-surprise-${day}`;
-  if(localStorage.getItem(seenKey)) return;
-  const index = (day * 7 + 3) % SURPRISE_BY_DAY[day].length;
-  localStorage.setItem(seenKey,"1");
-  setTimeout(()=>openSurprise(`day-${day}-${index}`),700);
+  const unread = !localStorage.getItem(seenKey);
+  if(status) status.textContent = unread ? "новое на сегодня" : "ещё кое-что для тебя";
+  if(label) label.textContent = unread ? "открыть сюрприз дня" : "ещё один сюрприз";
 }
 
 document.addEventListener("DOMContentLoaded", openDailySurpriseOnce);
@@ -600,7 +618,71 @@ function openRandomSurprise(){
   openSurprise(`random-${index}`);
 }
 
+function openBestSurprise(){
+  const day = currentTripDay();
+  if(day && SURPRISE_BY_DAY[day]?.length){
+    const seenKey = `trip-daily-surprise-${day}`;
+    if(!localStorage.getItem(seenKey)){
+      const index = (day * 7 + 3) % SURPRISE_BY_DAY[day].length;
+      localStorage.setItem(seenKey,"1");
+      openDailySurpriseOnce();
+      openSurprise(`day-${day}-${index}`);
+      return;
+    }
+  }
+  openRandomSurprise();
+}
+
 document.addEventListener("DOMContentLoaded",()=>{
   const button = $("surpriseButton");
-  if(button) button.addEventListener("click",openRandomSurprise);
+  if(button) button.addEventListener("click",openBestSurprise);
+});
+
+
+const VOICE_BY_DAY = {
+  10:"voice-10.mp3",
+  11:"voice-11.mp3",
+  14:"voice-14.mp3",
+  16:"voice-16.mp3",
+  17:"voice-17.mp3"
+};
+
+async function setupVoiceNotes(){
+  const day = currentTripDay();
+  const file = day ? VOICE_BY_DAY[day] : null;
+  if(!file) return;
+  const src = `./assets/audio/${file}`;
+  try{
+    const response = await fetch(src, {method:"HEAD", cache:"no-store"});
+    if(!response.ok) return;
+  }catch(_){ return; }
+
+  const home = $("homeVoiceButton");
+  const card = $("voiceCard");
+  if(home) home.hidden = false;
+  if(card) card.hidden = false;
+
+  const play = () => {
+    openModal(`
+      <div class="voice-modal">
+        <p class="eyebrow">голосовое от мужа</p>
+        <h3>Хочешь услышать меня?</h3>
+        <audio controls preload="metadata" src="${src}" style="width:100%"></audio>
+      </div>`);
+  };
+  home?.addEventListener("click", play);
+  $("voiceCardButton")?.addEventListener("click", play);
+}
+
+function setupNativeMode(){
+  const params = new URLSearchParams(location.search);
+  if(params.get("native") !== "1") return;
+  document.documentElement.classList.add("is-native");
+  document.querySelector(".android-card")?.remove();
+  if($("installButton")) $("installButton").hidden = true;
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  setupNativeMode();
+  setupVoiceNotes();
 });
