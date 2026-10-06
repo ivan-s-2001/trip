@@ -86,8 +86,9 @@ public class MainActivity extends Activity {
 
     private String urlFor(String screen, String surprise) {
         StringBuilder url = new StringBuilder(SITE_URL);
+        url.append("?native=1");
         if (surprise != null && !surprise.isEmpty()) {
-            url.append("?surprise=").append(Uri.encode(surprise));
+            url.append("&surprise=").append(Uri.encode(surprise));
         }
         if (screen != null && !screen.isEmpty()) {
             url.append("#").append(screen);
