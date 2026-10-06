@@ -61,8 +61,13 @@ public class MainActivity extends Activity {
             }
         });
 
-        String target = getIntent().getStringExtra("screen");
-        webView.loadUrl(urlFor(target));
+        loadFromIntent(getIntent());
+    }
+
+    private void loadFromIntent(Intent intent) {
+        String screen = intent.getStringExtra("screen");
+        String surprise = intent.getStringExtra("surprise");
+        webView.loadUrl(urlFor(screen, surprise));
     }
 
     private boolean handleUrl(Uri uri) {
@@ -79,9 +84,15 @@ public class MainActivity extends Activity {
         return true;
     }
 
-    private String urlFor(String screen) {
-        if (screen == null || screen.isEmpty()) return SITE_URL;
-        return SITE_URL + "#" + screen;
+    private String urlFor(String screen, String surprise) {
+        StringBuilder url = new StringBuilder(SITE_URL);
+        if (surprise != null && !surprise.isEmpty()) {
+            url.append("?surprise=").append(Uri.encode(surprise));
+        }
+        if (screen != null && !screen.isEmpty()) {
+            url.append("#").append(screen);
+        }
+        return url.toString();
     }
 
     private void requestNotificationsIfNeeded() {
@@ -98,10 +109,7 @@ public class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        String screen = intent.getStringExtra("screen");
-        if (webView != null) {
-            webView.loadUrl(urlFor(screen));
-        }
+        if (webView != null) loadFromIntent(intent);
     }
 
     @Override
