@@ -7,205 +7,139 @@
   <meta name="description" content="Маленькое место, где расстояние каждый день становится короче." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta property="og:title" content="Пока тебя нет рядом" />
-  <meta property="og:description" content="Я оставил тебе здесь немного нас." />
   <title>До грустного момента</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
-  <div class="ambient ambient-a" aria-hidden="true"></div>
-  <div class="ambient ambient-b" aria-hidden="true"></div>
+  <div class="app-shell">
+    <div class="grain" aria-hidden="true"></div>
 
-  <header class="topbar" id="top">
-    <a class="brand" href="#top" aria-label="В начало">
-      <span class="brand-mark">мы</span>
-      <span class="brand-date">10—17.10.26</span>
-    </a>
-    <button class="install-button" id="installButton" hidden>На экран</button>
-  </header>
-
-  <main>
-    <section class="hero section-shell" aria-labelledby="heroTitle">
-      <div class="hero-copy reveal">
-        <p class="eyebrow" id="heroEyebrow">До 10 октября</p>
-        <h1 id="heroTitle">До грустного<br><em>момента</em></h1>
-        <p class="hero-lead" id="heroLead">Но это всего на неделю. И каждую минуту после отъезда расстояние будет становиться только короче.</p>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">мы</span>
+        <span class="brand-date">10—17.10.26</span>
       </div>
+      <button class="install-button" id="installButton" hidden>На экран</button>
+    </header>
 
-      <div class="countdown-card reveal" aria-live="polite">
-        <div class="countdown-kicker" id="countdownKicker">осталось до поездки</div>
-        <div class="countdown" id="countdown">
-          <div><strong id="days">00</strong><span>дней</span></div>
-          <div><strong id="hours">00</strong><span>часов</span></div>
-          <div><strong id="minutes">00</strong><span>минут</span></div>
-          <div><strong id="seconds">00</strong><span>секунд</span></div>
+    <main class="screen-stack" id="screenStack">
+      <section class="screen is-active" data-screen="home" aria-label="Сегодня">
+        <div class="home-screen">
+          <div class="hero-copy">
+            <p class="eyebrow" id="heroEyebrow">До 10 октября</p>
+            <h1 id="heroTitle">До грустного<br><em>момента</em></h1>
+            <p class="hero-lead" id="heroLead">Но это всего на неделю. А потом каждый день будет вести тебя обратно домой.</p>
+          </div>
+
+          <div class="countdown-card" aria-live="polite">
+            <div class="countdown-kicker" id="countdownKicker">осталось до поездки</div>
+            <div class="countdown">
+              <div><strong id="days">00</strong><span>дней</span></div>
+              <div><strong id="hours">00</strong><span>час</span></div>
+              <div><strong id="minutes">00</strong><span>мин</span></div>
+              <div><strong id="seconds">00</strong><span>сек</span></div>
+            </div>
+            <div class="trip-progress" id="tripProgressWrap" hidden>
+              <div class="trip-progress-meta"><span id="progressLabel">День 1 из 7</span><span id="progressPercent">0%</span></div>
+              <div class="progress-track"><span id="progressBar"></span></div>
+            </div>
+          </div>
+
+          <article class="note-card">
+            <div class="note-top">
+              <span>сегодня от мужа</span>
+              <span id="visitNumber">№1</span>
+            </div>
+            <blockquote id="dailyNote">Я уже скучаю, хотя ты ещё даже не уехала.</blockquote>
+            <button class="text-button" id="anotherNote">ещё записку ♥</button>
+          </article>
         </div>
-        <div class="trip-progress" id="tripProgressWrap" hidden>
-          <div class="trip-progress-meta"><span id="progressLabel">День 1 из 7</span><span id="progressPercent">0%</span></div>
-          <div class="progress-track"><span id="progressBar"></span></div>
-          <div class="progress-dates"><span>10 октября</span><span>17 октября</span></div>
+      </section>
+
+      <section class="screen" data-screen="memories" aria-label="Наши фотографии">
+        <div class="screen-head">
+          <div><p class="eyebrow">на случай, если соскучишься</p><h2>Немного <em>нас</em></h2></div>
+          <span class="screen-count">16 фото</span>
         </div>
-      </div>
-
-      <a class="scroll-cue" href="#today">листай — я кое-что оставил ниже</a>
-    </section>
-
-    <section class="today section-shell" id="today" aria-labelledby="todayTitle">
-      <div class="section-heading reveal">
-        <p class="eyebrow">сегодня от мужа</p>
-        <h2 id="todayTitle">На случай, если захочется <em>немного домой</em></h2>
-      </div>
-      <article class="note-card reveal">
-        <div class="note-stamp">записка <span id="visitNumber">№1</span></div>
-        <blockquote id="dailyNote">Я уже скучаю, хотя ты ещё даже не уехала.</blockquote>
-        <button class="text-button" id="anotherNote">ещё одну записку</button>
-      </article>
-    </section>
-
-    <section class="intro-photo section-shell" aria-label="Главное воспоминание">
-      <figure class="feature-photo reveal photo-frame" data-photo="hero">
-        <div class="photo-placeholder"><span>сюда — ваша любимая фотография</span><small>assets/photos/hero.jpg</small></div>
-        <img src="./assets/photos/hero.jpg" alt="Наша любимая фотография" loading="lazy" />
-        <figcaption>
-          <span>01</span>
-          <p>Пока тебя нет рядом, я оставил тебе здесь немного нас.</p>
-        </figcaption>
-      </figure>
-    </section>
-
-    <section class="memory-wall section-shell" id="memories" aria-labelledby="memoriesTitle">
-      <div class="section-heading narrow reveal">
-        <p class="eyebrow">на случай, если соскучишься</p>
-        <h2 id="memoriesTitle">Немного <em>нас</em></h2>
-        <p>Не идеальная галерея. Просто фотографии, которые мне хочется хранить чуть дольше обычного.</p>
-      </div>
-      <div class="memory-grid" id="memoryGrid"></div>
-    </section>
-
-    <section class="story-strip section-shell" aria-labelledby="storyTitle">
-      <div class="section-heading reveal">
-        <p class="eyebrow">не по датам, а по ощущениям</p>
-        <h2 id="storyTitle">То, что я <em>помню</em></h2>
-      </div>
-      <div class="story-list">
-        <article class="story-row reveal">
-          <span class="story-index">01</span>
-          <div><h3>Твои смешные лица</h3><p>Почему-то именно такие фотографии почти всегда становятся любимыми.</p></div>
-        </article>
-        <article class="story-row reveal">
-          <span class="story-index">02</span>
-          <div><h3>Наши обычные вечера</h3><p>Кажется, в них ничего особенного. А потом именно по ним скучаешь сильнее всего.</p></div>
-        </article>
-        <article class="story-row reveal">
-          <span class="story-index">03</span>
-          <div><h3>Когда ты рядом</h3><p>Дом — это не адрес. Я окончательно понял это рядом с тобой.</p></div>
-        </article>
-        <article class="story-row reveal">
-          <span class="story-index">04</span>
-          <div><h3>И всё, что ещё впереди</h3><p>Пусть эта поездка будет просто маленькой запятой в очень длинной истории.</p></div>
-        </article>
-      </div>
-    </section>
-
-    <section class="days-section section-shell" id="daysSection" aria-labelledby="daysTitle">
-      <div class="section-heading narrow reveal">
-        <p class="eyebrow">10 → 17 октября</p>
-        <h2 id="daysTitle">Семь дней <em>между нами</em></h2>
-        <p>Каждый день открывается новая маленькая глава. Будущие пока под замком — так интереснее.</p>
-      </div>
-      <div class="days-grid" id="daysGrid"></div>
-    </section>
-
-    <section class="letters section-shell" id="letters" aria-labelledby="lettersTitle">
-      <div class="section-heading reveal">
-        <p class="eyebrow">конверты на всякий случай</p>
-        <h2 id="lettersTitle">Открой, <em>когда…</em></h2>
-      </div>
-      <div class="letters-grid" id="lettersGrid"></div>
-    </section>
-
-    <section class="hug-bank section-shell" aria-labelledby="hugTitle">
-      <div class="hug-card reveal">
-        <div>
-          <p class="eyebrow">семейная бухгалтерия</p>
-          <h2 id="hugTitle">Банк <em>объятий</em></h2>
-          <p class="hug-copy">Пока тебя нет, задолженность только растёт. Погашение — исключительно лично.</p>
+        <div class="screen-scroll">
+          <div class="memory-grid" id="memoryGrid"></div>
         </div>
-        <div class="hug-balance">
-          <span>накоплено</span>
-          <strong id="hugCount">24</strong>
-          <small>объятий</small>
+      </section>
+
+      <section class="screen" data-screen="days" aria-label="Семь дней">
+        <div class="screen-head">
+          <div><p class="eyebrow">10 → 17 октября</p><h2>Семь дней <em>между нами</em></h2></div>
+          <span class="screen-count">8 глав</span>
         </div>
-        <button class="hug-button" id="hugButton" aria-label="Добавить одно объятие">+ отложить ещё одно</button>
-        <p class="hug-status" id="hugStatus">Проценты начисляются любовью.</p>
-      </div>
-    </section>
-
-    <section class="reasons section-shell" aria-labelledby="reasonsTitle">
-      <div class="section-heading narrow reveal">
-        <p class="eyebrow">если вдруг забудешь</p>
-        <h2 id="reasonsTitle">За что я тебя <em>люблю</em></h2>
-      </div>
-      <div class="reasons-list" id="reasonsList"></div>
-    </section>
-
-    <section class="random-memory section-shell" aria-labelledby="randomTitle">
-      <div class="random-card reveal">
-        <p class="eyebrow">машина воспоминаний</p>
-        <h2 id="randomTitle">Мне тебя <em>не хватает</em></h2>
-        <p id="randomMemory">Нажми — и я напомню тебе что-нибудь хорошее про нас.</p>
-        <button class="primary-button" id="randomMemoryButton">достать воспоминание</button>
-      </div>
-    </section>
-
-    <section class="promise section-shell" aria-labelledby="promiseTitle">
-      <div class="promise-copy reveal">
-        <p class="eyebrow">одно важное</p>
-        <h2 id="promiseTitle">Расстояние —<br>это просто <em>временно</em></h2>
-        <p>Каким бы длинным ни казался день, он всё равно заканчивается. И каждый законченный день — на один ближе к тебе дома.</p>
-      </div>
-      <div class="promise-photo photo-frame reveal">
-        <div class="photo-placeholder"><span>ещё одно ваше фото</span><small>assets/photos/home.jpg</small></div>
-        <img src="./assets/photos/home.jpg" alt="Фотография о доме" loading="lazy" />
-      </div>
-    </section>
-
-    <section class="finale section-shell" id="finale" aria-labelledby="finaleTitle">
-      <div class="finale-card reveal">
-        <p class="eyebrow">финальная глава</p>
-        <h2 id="finaleTitle">17 октября</h2>
-        <p id="finaleText">Этот блок пока тихо ждёт своего дня.</p>
-        <div class="finale-secret" id="finaleSecret" hidden>
-          <span>семь дней закончились</span>
-          <strong>Возвращайся ко мне.</strong>
-          <p>Я очень по тебе скучал.</p>
+        <div class="screen-scroll">
+          <div class="days-grid" id="daysGrid"></div>
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
 
-  <footer class="footer section-shell">
-    <p>Сделано мужем. Для одной конкретной жены.</p>
-    <p>10—17 октября 2026 · Барнаул</p>
-  </footer>
+      <section class="screen" data-screen="letters" aria-label="Письма">
+        <div class="screen-head">
+          <div><p class="eyebrow">конверты на всякий случай</p><h2>Открой, <em>когда…</em></h2></div>
+          <span class="screen-count">8 писем</span>
+        </div>
+        <div class="screen-scroll">
+          <div class="letters-grid" id="lettersGrid"></div>
+        </div>
+      </section>
 
-  <nav class="bottom-nav" aria-label="Навигация по странице">
-    <a href="#today"><span>сегодня</span></a>
-    <a href="#memories"><span>мы</span></a>
-    <a href="#daysSection"><span>7 дней</span></a>
-    <a href="#letters"><span>письма</span></a>
-  </nav>
+      <section class="screen" data-screen="more" aria-label="Ещё">
+        <div class="screen-head">
+          <div><p class="eyebrow">ещё немного от меня</p><h2>Пока тебя <em>нет рядом</em></h2></div>
+        </div>
+        <div class="screen-scroll more-scroll">
+          <section class="mini-card hug-card">
+            <div class="mini-label">семейная бухгалтерия</div>
+            <div class="hug-row"><div><h3 id="hugTitle">Банк объятий</h3><p id="hugStatus">Проценты начисляются любовью.</p></div><strong id="hugCount">24</strong></div>
+            <button class="primary-button" id="hugButton">+ отложить ещё одно</button>
+          </section>
+
+          <section class="mini-card">
+            <div class="mini-label">машина воспоминаний</div>
+            <h3 id="randomTitle">Мне тебя не хватает</h3>
+            <p id="randomMemory">Нажми — и я напомню тебе что-нибудь хорошее про нас.</p>
+            <button class="primary-button" id="randomMemoryButton">достать воспоминание</button>
+          </section>
+
+          <section class="mini-card">
+            <div class="mini-label">если вдруг забудешь</div>
+            <h3>За что я тебя люблю</h3>
+            <div class="reasons-list" id="reasonsList"></div>
+          </section>
+
+          <section class="mini-card finale-card">
+            <div class="mini-label">финальная глава</div>
+            <h3 id="finaleTitle">17 октября</h3>
+            <p id="finaleText">Этот блок пока тихо ждёт своего дня.</p>
+            <div class="finale-secret" id="finaleSecret" hidden>
+              <span>семь дней закончились</span>
+              <strong>Возвращайся ко мне.</strong>
+              <p>Я очень по тебе скучал.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Разделы">
+      <button class="nav-item is-active" data-target="home"><span class="nav-icon">⌂</span><span>сегодня</span></button>
+      <button class="nav-item" data-target="memories"><span class="nav-icon">◇</span><span>мы</span></button>
+      <button class="nav-item" data-target="days"><span class="nav-icon">7</span><span>дней</span></button>
+      <button class="nav-item" data-target="letters"><span class="nav-icon">✉</span><span>письма</span></button>
+      <button class="nav-item" data-target="more"><span class="nav-icon">♥</span><span>ещё</span></button>
+    </nav>
+  </div>
 
   <dialog class="modal" id="contentModal">
     <button class="modal-close" id="modalClose" aria-label="Закрыть">×</button>
     <div id="modalContent"></div>
   </dialog>
-
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
   <script src="./app.js" defer></script>
 </body>
 </html>
