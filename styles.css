@@ -121,3 +121,5 @@ h1 em,h2 em{color:var(--berry);font-weight:400}
   .bottom-nav{padding-top:5px}.nav-item{padding:3px 1px}.nav-icon{font-size:15px}
 }
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+.download-link{display:block;text-align:center;text-decoration:none}
+.android-card{background:linear-gradient(145deg,rgba(255,250,244,.92),rgba(239,228,215,.92))}
