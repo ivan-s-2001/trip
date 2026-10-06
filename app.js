@@ -349,3 +349,45 @@ function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
+function setupSingleScreenNavigation() {
+  const screens = [...document.querySelectorAll(".screen")];
+  const items = [...document.querySelectorAll(".nav-item")];
+  const order = items.map(item => item.dataset.target);
+  let active = "home";
+
+  const show = (name) => {
+    if (!order.includes(name) || name === active) return;
+    active = name;
+    screens.forEach(screen => screen.classList.toggle("is-active", screen.dataset.screen === name));
+    items.forEach(item => {
+      const selected = item.dataset.target === name;
+      item.classList.toggle("is-active", selected);
+      item.setAttribute("aria-current", selected ? "page" : "false");
+    });
+    const current = document.querySelector(`.screen[data-screen="${name}"] .screen-scroll`);
+    if (current) current.scrollTop = 0;
+    try { history.replaceState(null, "", `#${name}`); } catch (_) {}
+  };
+
+  items.forEach(item => item.addEventListener("click", () => show(item.dataset.target)));
+
+  const initial = location.hash.replace("#", "");
+  if (order.includes(initial) && initial !== "home") show(initial);
+
+  let startX = 0, startY = 0;
+  const stack = $("screenStack");
+  stack.addEventListener("touchstart", e => {
+    const t = e.changedTouches[0]; startX = t.clientX; startY = t.clientY;
+  }, {passive:true});
+  stack.addEventListener("touchend", e => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX, dy = t.clientY - startY;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
+    const index = order.indexOf(active);
+    const next = dx < 0 ? Math.min(order.length - 1, index + 1) : Math.max(0, index - 1);
+    if (next !== index) show(order[next]);
+  }, {passive:true});
+}
+
+document.addEventListener("DOMContentLoaded", setupSingleScreenNavigation);
