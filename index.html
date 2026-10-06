@@ -49,13 +49,32 @@
 
           <article class="note-card">
             <div class="note-top">
-              <span>сегодня от мужа</span>
+              <span id="todayLabel">сейчас от мужа</span>
               <span id="visitNumber">№1</span>
             </div>
             <blockquote id="dailyNote">Я уже скучаю, хотя ты ещё даже не уехала.</blockquote>
-            <div class="note-actions">
-              <button class="text-button" id="anotherNote">ещё записку</button>
-              <button class="text-button" id="surpriseButton">маленький сюрприз ♥</button>
+
+            <button class="now-button" id="surpriseButton" type="button">
+              <span>
+                <small id="surpriseStatus">для тебя кое-что есть</small>
+                <strong id="surpriseButtonLabel">открыть сюрприз</strong>
+              </span>
+              <b aria-hidden="true">♥</b>
+            </button>
+
+            <div class="quick-actions" aria-label="Быстрые действия">
+              <button class="quick-action hug-action" id="homeHugButton" type="button">
+                <span class="hold-ring" aria-hidden="true"><i>♥</i></span>
+                <span><strong>обнять</strong><small id="homeHugHint">удерживай</small></span>
+              </button>
+              <button class="quick-action" id="homeVoiceButton" type="button" hidden>
+                <span class="quick-icon" aria-hidden="true">▶</span>
+                <span><strong>голос</strong><small>услышать меня</small></span>
+              </button>
+              <button class="quick-action" id="anotherNote" type="button">
+                <span class="quick-icon" aria-hidden="true">✦</span>
+                <span><strong>ещё</strong><small>другая записка</small></span>
+              </button>
             </div>
           </article>
         </div>
@@ -93,7 +112,7 @@
 
       <section class="screen" data-screen="more" aria-label="Ещё">
         <div class="screen-head">
-          <div><p class="eyebrow">ещё немного от меня</p><h2>Пока тебя <em>нет рядом</em></h2></div>
+          <div><p class="eyebrow">когда хочется поближе</p><h2>Я всё равно <em>рядом</em></h2></div>
         </div>
         <div class="screen-scroll more-scroll">
           <section class="mini-card android-card">
@@ -101,6 +120,13 @@
             <h3>Отдельное приложение</h3>
             <p>Тот же Trip, но с интерактивными уведомлениями: подготовленный сюрприз на день + случайные записки из общего пула.</p>
             <a class="primary-button download-link" href="https://github.com/ivan-s-2001/trip/releases/download/android-latest/Trip-1.2.0.apk">скачать APK</a>
+          </section>
+
+          <section class="mini-card voice-card" id="voiceCard" hidden>
+            <div class="mini-label">голосовые</div>
+            <h3>Хочешь услышать меня?</h3>
+            <p id="voiceCardText">Иногда вместо текста здесь будет мой голос.</p>
+            <button class="primary-button" id="voiceCardButton" type="button">включить голосовое</button>
           </section>
 
           <section class="mini-card hug-card">
@@ -138,10 +164,10 @@
 
     <nav class="bottom-nav" aria-label="Разделы">
       <button class="nav-item is-active" data-target="home"><span class="nav-icon">⌂</span><span>сегодня</span></button>
-      <button class="nav-item" data-target="memories"><span class="nav-icon">◇</span><span>мы</span></button>
+      <button class="nav-item" data-target="memories"><span class="nav-icon">◇</span><span>фото</span></button>
       <button class="nav-item" data-target="days"><span class="nav-icon">7</span><span>дней</span></button>
       <button class="nav-item" data-target="letters"><span class="nav-icon">✉</span><span>письма</span></button>
-      <button class="nav-item" data-target="more"><span class="nav-icon">♥</span><span>ещё</span></button>
+      <button class="nav-item" data-target="more"><span class="nav-icon">♥</span><span>рядом</span></button>
     </nav>
   </div>
 
