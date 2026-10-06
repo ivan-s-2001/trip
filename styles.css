@@ -183,3 +183,9 @@ h1 em,h2 em{color:var(--berry);font-weight:400}
   .now-button{min-height:50px;padding:8px 10px}.now-button strong{font-size:18px}
   .quick-action{min-height:45px;padding:5px 6px}.quick-icon,.hold-ring{width:27px;height:27px;flex-basis:27px}
 }
+
+.anniversary-photo{position:relative;min-height:240px;border-radius:20px;overflow:hidden;margin:0 0 14px;background:var(--paper2)}
+.anniversary-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}
+.anniversary-photo .memory-fallback{z-index:1}
+html[data-anniversary="true"] .brand-date{color:var(--berry)}
+html[data-anniversary="true"] .note-card{background:linear-gradient(145deg,var(--berry),var(--berryDark))}
