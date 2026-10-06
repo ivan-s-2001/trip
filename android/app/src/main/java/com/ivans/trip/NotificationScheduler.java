@@ -16,53 +16,36 @@ import java.util.TimeZone;
 public final class NotificationScheduler {
     public static final String CHANNEL_LOVE = "love_notes";
     public static final String CHANNEL_TRIP = "trip_moments";
-    private static final TimeZone BARNAUL = TimeZone.getTimeZone("Asia/Barnaul");
+    private static final int RANDOM_POOL_SIZE = 24;
 
     private static final String[] RANDOM_TITLES = {
-            "От мужа ♥",
-            "Маленькая записка",
-            "На случай, если соскучилась",
-            "Просто напоминаю",
-            "Тебе кое-что оставили ♥"
+            "Тук-тук. Это муж ♥",
+            "Тебе кое-что оставили",
+            "Не буду писать всё здесь",
+            "Маленький сюрприз внутри",
+            "Зайди на минутку ♥",
+            "Есть кое-что только для тебя"
     };
 
-    private static final String[] RANDOM_MESSAGES = {
-            "Дома тебя очень любят. Особенно один конкретный муж.",
-            "Сегодня до дома уже ближе, чем было вчера ♥",
-            "Мысленно обнял тебя. Да, это официально считается.",
-            "Пожалуйста, нормально поешь. Распоряжение мужа.",
-            "Мне нравится мысль, что время сейчас работает на нас.",
-            "Если ты улыбаешься экрану — моя задача выполнена.",
-            "Тебя временно одолжил Барнаул. Бессрочную аренду я не подписывал.",
-            "Я скучаю по твоему голосу, шагам и обычным вечерам.",
-            "Ты там, я здесь, а моё любимое место всё равно рядом с тобой.",
-            "Пусть сегодня случится хотя бы одна вещь, которая тебя порадует.",
-            "Не торопи время. Оно уже идёт в правильную сторону.",
-            "Я сохранил для тебя место рядом. Оно вообще-то всегда твоё.",
-            "С тобой даже самые обычные дни становятся теми, по которым скучаешь.",
-            "Ничего срочного. Просто: я тебя люблю.",
-            "В доме временно отсутствует главный источник уюта. Просим вернуть 17 октября.",
-            "Если день тяжёлый — вечером он всё равно станет ещё одним днём ближе к дому.",
-            "Хочу потом услышать всё: что было смешно, странно, вкусно и красиво.",
-            "Я поскучаю за двоих. Ты там лучше живи и улыбайся.",
-            "Спойлер: в конце этой недели я всё равно получаю тебя обратно.",
-            "Закрой глаза на секунду. Представь, что я рядом. Остальное наверстаем дома.",
-            "Ты мой любимый человек. Иногда этого достаточно.",
-            "Я бы сейчас выбрал самый обычный вечер с тобой вместо любого интересного вечера без тебя.",
-            "Если всё бесит — разрешаю написать мужу и пожаловаться на всё подряд.",
-            "Ещё один маленький привет из дома ♥"
+    private static final String[] RANDOM_TEASERS = {
+            "Я спрятал внутри маленькую штуку. Откроешь?",
+            "Это не помещается в уведомление. Зайди ♥",
+            "Там внутри кое-что милое. Больше спойлерить не буду.",
+            "Одно нажатие — и узнаешь, что я опять придумал.",
+            "У тебя новое маленькое «от мужа».",
+            "Я специально оставил самое важное внутри приложения."
     };
 
-    private static final FixedNote[] FIXED = {
-            new FixedNote(9, 21, 30, "До грустного момента — совсем чуть-чуть", "Я уже скучаю заранее ♥", "home"),
-            new FixedNote(10, 8, 30, "Сегодня тот самый день", "Береги себя в дороге. И напиши мне, когда доберёшься ♥", "home"),
-            new FixedNote(11, 9, 30, "Первое утро далеко", "Я рядом. Даже если сегодня между нами много километров.", "days"),
-            new FixedNote(12, 20, 0, "Ещё один день закончился", "До дома стало ещё на один день ближе ♥", "days"),
-            new FixedNote(13, 12, 30, "Почти половина", "Время идёт в правильную сторону.", "days"),
-            new FixedNote(14, 18, 0, "Половина позади ♥", "Теперь возвращение ближе, чем отъезд.", "days"),
-            new FixedNote(15, 11, 0, "Уже можно говорить «скоро домой»", "Осталось совсем чуть-чуть.", "home"),
-            new FixedNote(16, 21, 0, "Последняя ночь", "Завтра ты возвращаешься. Я очень жду.", "letters"),
-            new FixedNote(17, 8, 30, "Сегодня домой ♥", "Семь дней закончились. Возвращайся ко мне.", "home")
+    private static final PreparedNote[] PREPARED = {
+            new PreparedNote(9, 21, 30, "До грустного момента совсем чуть-чуть", "Я кое-что оставил тебе на вечер ♥", "home", "random-0"),
+            new PreparedNote(10, 8, 45, "Сегодня тот самый день", "Не буду всё писать здесь. Открой, когда будет минутка ♥", "home", "day-10-0"),
+            new PreparedNote(11, 9, 15, "Первое утро далеко", "У меня есть для тебя кое-что именно на сегодня.", "home", "day-11-0"),
+            new PreparedNote(12, 20, 15, "Вечерняя записка от мужа", "День почти закончился. Зайди на минутку ♥", "home", "day-12-1"),
+            new PreparedNote(13, 13, 0, "Мы уже почти у середины", "Открой — там немного приятной математики.", "home", "day-13-0"),
+            new PreparedNote(14, 18, 30, "Половина позади ♥", "Для этого момента я кое-что приготовил.", "home", "day-14-0"),
+            new PreparedNote(15, 11, 30, "Уже можно говорить «скоро»", "Зайди. Сегодня внутри особенно хорошее слово.", "home", "day-15-0"),
+            new PreparedNote(16, 21, 15, "Последняя ночь", "Тут сообщение, которое я хотел оставить именно сегодня.", "home", "day-16-0"),
+            new PreparedNote(17, 8, 30, "Сегодня домой ♥", "Последний сюрприз этой поездки уже ждёт внутри.", "home", "day-17-0")
     };
 
     private NotificationScheduler() {}
@@ -75,19 +58,19 @@ public final class NotificationScheduler {
 
         NotificationChannel love = new NotificationChannel(
                 CHANNEL_LOVE,
-                "Записки от мужа",
+                "Случайные сюрпризы",
                 NotificationManager.IMPORTANCE_DEFAULT
         );
-        love.setDescription("Случайные тёплые сообщения во время поездки");
+        love.setDescription("Случайные маленькие сообщения и интерактивы от мужа");
         love.enableVibration(true);
         love.setLightColor(Color.rgb(143, 51, 77));
 
         NotificationChannel trip = new NotificationChannel(
                 CHANNEL_TRIP,
-                "Важные моменты поездки",
+                "Сообщения на день",
                 NotificationManager.IMPORTANCE_DEFAULT
         );
-        trip.setDescription("Сообщения к ключевым дням 10–17 октября");
+        trip.setDescription("Подготовленные сообщения для конкретных дней поездки");
         trip.enableVibration(true);
         trip.setLightColor(Color.rgb(143, 51, 77));
 
@@ -96,13 +79,13 @@ public final class NotificationScheduler {
     }
 
     public static void scheduleAll(Context context) {
-        scheduleFixed(context);
+        schedulePrepared(context);
         scheduleRandom(context);
     }
 
-    private static void scheduleFixed(Context context) {
+    private static void schedulePrepared(Context context) {
         int code = 1000;
-        for (FixedNote note : FIXED) {
+        for (PreparedNote note : PREPARED) {
             long when = atLocalTime(note.day, note.hour, note.minute);
             if (when > System.currentTimeMillis()) {
                 schedule(
@@ -112,7 +95,8 @@ public final class NotificationScheduler {
                         CHANNEL_TRIP,
                         note.title,
                         note.text,
-                        note.screen
+                        note.screen,
+                        note.surprise
                 );
             }
             code++;
@@ -121,35 +105,33 @@ public final class NotificationScheduler {
 
     private static void scheduleRandom(Context context) {
         for (int day = 10; day <= 16; day++) {
-            scheduleRandomSlot(context, day, 0, 10, 14);
-            scheduleRandomSlot(context, day, 1, 17, 21);
+            long seed = 20261026L + day * 997L;
+            Random random = new Random(seed);
+
+            int startMinute = 14 * 60;
+            int endMinute = 20 * 60 + 30;
+            int minuteOfDay = startMinute + random.nextInt(endMinute - startMinute + 1);
+            int hour = minuteOfDay / 60;
+            int minute = minuteOfDay % 60;
+            long when = atLocalTime(day, hour, minute);
+
+            if (when <= System.currentTimeMillis()) continue;
+
+            int contentIndex = random.nextInt(RANDOM_POOL_SIZE);
+            String title = RANDOM_TITLES[random.nextInt(RANDOM_TITLES.length)];
+            String teaser = RANDOM_TEASERS[random.nextInt(RANDOM_TEASERS.length)];
+
+            schedule(
+                    context,
+                    2000 + day,
+                    when,
+                    CHANNEL_LOVE,
+                    title,
+                    teaser,
+                    "home",
+                    "random-" + contentIndex
+            );
         }
-    }
-
-    private static void scheduleRandomSlot(
-            Context context,
-            int day,
-            int slot,
-            int startHour,
-            int endHour
-    ) {
-        long seed = 20261000L + day * 97L + slot * 1009L;
-        Random random = new Random(seed);
-
-        int startMinute = startHour * 60;
-        int endMinute = endHour * 60 + 1;
-        int minuteOfDay = startMinute + random.nextInt(Math.max(1, endMinute - startMinute));
-
-        int hour = minuteOfDay / 60;
-        int minute = minuteOfDay % 60;
-        long when = atLocalTime(day, hour, minute);
-        if (when <= System.currentTimeMillis()) return;
-
-        String title = RANDOM_TITLES[random.nextInt(RANDOM_TITLES.length)];
-        String text = RANDOM_MESSAGES[random.nextInt(RANDOM_MESSAGES.length)];
-        int code = 2000 + day * 10 + slot;
-
-        schedule(context, code, when, CHANNEL_LOVE, title, text, "home");
     }
 
     private static long atLocalTime(int day, int hour, int minute) {
@@ -166,7 +148,8 @@ public final class NotificationScheduler {
             String channel,
             String title,
             String text,
-            String screen
+            String screen,
+            String surprise
     ) {
         AlarmManager alarmManager =
                 (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -177,6 +160,7 @@ public final class NotificationScheduler {
         intent.putExtra("title", title);
         intent.putExtra("text", text);
         intent.putExtra("screen", screen);
+        intent.putExtra("surprise", surprise);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
@@ -192,21 +176,31 @@ public final class NotificationScheduler {
         }
     }
 
-    private static final class FixedNote {
+    private static final class PreparedNote {
         final int day;
         final int hour;
         final int minute;
         final String title;
         final String text;
         final String screen;
+        final String surprise;
 
-        FixedNote(int day, int hour, int minute, String title, String text, String screen) {
+        PreparedNote(
+                int day,
+                int hour,
+                int minute,
+                String title,
+                String text,
+                String screen,
+                String surprise
+        ) {
             this.day = day;
             this.hour = hour;
             this.minute = minute;
             this.title = title;
             this.text = text;
             this.screen = screen;
+            this.surprise = surprise;
         }
     }
 }
