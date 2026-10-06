@@ -151,6 +151,8 @@ function stateFor(date = now()) {
 function updateCountdown() {
   const current = now();
   const state = stateFor(current);
+  const anniversary = current.getFullYear() === 2026 && current.getMonth() === 9 && current.getDate() === 16;
+  document.documentElement.dataset.anniversary = anniversary ? "true" : "false";
   const target = state === "before" ? CONFIG.departure : CONFIG.returnDate;
   let diff = Math.max(0, target - current);
   if (state === "after") diff = 0;
@@ -169,7 +171,7 @@ function updateCountdown() {
     document.title = "До грустного момента";
     $("tripProgressWrap").hidden = true;
   } else if (state === "away") {
-    const isAnniversary = current.getFullYear() === 2026 && current.getMonth() === 9 && current.getDate() === 16;
+    const isAnniversary = anniversary;
     if (isAnniversary) {
       $("heroEyebrow").textContent = "16 октября · наш день";
       $("heroTitle").innerHTML = "5 лет<br><em>с того дня</em>";
