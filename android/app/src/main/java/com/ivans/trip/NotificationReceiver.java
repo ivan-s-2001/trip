@@ -19,10 +19,11 @@ public class NotificationReceiver extends BroadcastReceiver {
         String title = intent.getStringExtra("title");
         String text = intent.getStringExtra("text");
         String screen = intent.getStringExtra("screen");
+        String surprise = intent.getStringExtra("surprise");
 
         if (channel == null) channel = NotificationScheduler.CHANNEL_LOVE;
         if (title == null) title = "От мужа ♥";
-        if (text == null) text = "Просто напоминаю, что тебя дома очень ждут.";
+        if (text == null) text = "Я кое-что оставил внутри. Откроешь?";
 
         if (Build.VERSION.SDK_INT >= 33 &&
                 context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -32,6 +33,7 @@ public class NotificationReceiver extends BroadcastReceiver {
 
         Intent open = new Intent(context, MainActivity.class);
         open.putExtra("screen", screen == null ? "home" : screen);
+        if (surprise != null) open.putExtra("surprise", surprise);
         open.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         PendingIntent contentIntent = PendingIntent.getActivity(
