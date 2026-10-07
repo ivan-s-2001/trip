@@ -405,39 +405,89 @@ function markHome(){
 
 function setupHold(button,ring){
   if(!button||!ring) return;
-  let start=0,raf=0,done=false;
-  const durationMs=1100;
 
-  const reset=()=>{
+  let startedAt=0;
+  let raf=0;
+  let activePointer=null;
+  let completed=false;
+  const holdMs=950;
+
+  const paint=(progress)=>{
+    ring.style.setProperty("--hold",String(Math.max(0,Math.min(1,progress))));
+  };
+
+  const cleanup=()=>{
     cancelAnimationFrame(raf);
-    ring.style.setProperty("--hold","0");
-    start=0;
+    raf=0;
+    startedAt=0;
     button.classList.remove("is-holding");
+    paint(0);
+    if(activePointer!==null){
+      try{ button.releasePointerCapture?.(activePointer); }catch(_){}
+    }
+    activePointer=null;
   };
 
-  const complete=()=>{
-    done=true;
+  const finish=()=>{
+    if(completed) return;
+    completed=true;
     localStorage.setItem("trip-hugs",String(Number(localStorage.getItem("trip-hugs")||0)+1));
-    navigator.vibrate?.([25,30,42]);
+    paint(1);
+    navigator.vibrate?.([22,32,46]);
     showToast("обнял ♥");
-    reset();
+    button.classList.add("is-complete");
+    setTimeout(()=>{
+      button.classList.remove("is-complete");
+      cleanup();
+      completed=false;
+    },240);
   };
 
-  const tick=t=>{
-    if(!start) return;
-    const p=Math.min(1,(t-start)/durationMs);
-    ring.style.setProperty("--hold",String(p));
-    if(p>=1){complete();return;}
-    raf=requestAnimationFrame(tick);
+  const frame=(time)=>{
+    if(!startedAt || completed) return;
+    const progress=(time-startedAt)/holdMs;
+    paint(progress);
+    if(progress>=1){
+      finish();
+      return;
+    }
+    raf=requestAnimationFrame(frame);
   };
 
   button.addEventListener("pointerdown",e=>{
-    e.preventDefault();done=false;button.classList.add("is-holding");start=performance.now();raf=requestAnimationFrame(tick);
+    if(activePointer!==null) return;
+    e.preventDefault();
+    completed=false;
+    activePointer=e.pointerId;
+    try{ button.setPointerCapture?.(e.pointerId); }catch(_){}
+    button.classList.add("is-holding");
+    startedAt=performance.now();
+    paint(0);
+    raf=requestAnimationFrame(frame);
   });
-  ["pointerup","pointercancel","pointerleave"].forEach(type=>button.addEventListener(type,reset));
-  button.addEventListener("click",e=>{
-    if(e.detail===0&&!done) complete();
-    done=false;
+
+  button.addEventListener("pointerup",e=>{
+    if(activePointer!==e.pointerId) return;
+    e.preventDefault();
+    if(!completed) cleanup();
+  });
+
+  button.addEventListener("pointercancel",e=>{
+    if(activePointer!==e.pointerId) return;
+    if(!completed) cleanup();
+  });
+
+  button.addEventListener("lostpointercapture",()=>{
+    if(!completed && startedAt) cleanup();
+  });
+
+  button.addEventListener("contextmenu",e=>e.preventDefault());
+
+  button.addEventListener("keydown",e=>{
+    if((e.key==="Enter"||e.key===" ") && !completed){
+      e.preventDefault();
+      finish();
+    }
   });
 }
 
