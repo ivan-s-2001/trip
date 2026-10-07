@@ -3,191 +3,97 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#f7f0e8" />
-  <meta name="description" content="Маленькое место, где расстояние каждый день становится короче." />
+  <meta name="theme-color" content="#f6efe7" />
+  <meta name="description" content="Маленькое место для нас на время поездки." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <title>До грустного момента</title>
+  <title>мы</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <div class="app-shell">
-    <div class="grain" aria-hidden="true"></div>
-
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark">мы</span>
-        <span class="brand-date">10—17.10.26</span>
+        <strong>мы</strong>
+        <span>10—17 октября</span>
       </div>
-      <div class="topbar-actions">
+      <div class="top-actions">
         <button class="qa-button" id="qaButton" type="button" hidden>QA</button>
-        <button class="install-button" id="installButton" hidden>На экран</button>
+        <button class="route-chip" id="routeChip" type="button">
+          <span id="routeDot">→</span>
+          <span id="routeShort">Рыбинск → Курган</span>
+        </button>
       </div>
     </header>
 
-    <main class="screen-stack" id="screenStack">
-      <section class="screen is-active" data-screen="home" aria-label="Сегодня">
-        <div class="home-screen">
-          <div class="hero-copy">
-            <p class="eyebrow" id="heroEyebrow">До 10 октября</p>
-            <h1 id="heroTitle">До грустного<br><em>момента</em></h1>
-            <p class="hero-lead" id="heroLead">Но это всего на неделю. А потом каждый день будет вести тебя обратно домой.</p>
-          </div>
-
-          <div class="countdown-card" aria-live="polite">
-            <div class="countdown-kicker" id="countdownKicker">осталось до поездки</div>
-            <div class="countdown">
-              <div><strong id="days">00</strong><span>дней</span></div>
-              <div><strong id="hours">00</strong><span>час</span></div>
-              <div><strong id="minutes">00</strong><span>мин</span></div>
-              <div><strong id="seconds">00</strong><span>сек</span></div>
-            </div>
-            <div class="trip-progress" id="tripProgressWrap" hidden>
-              <div class="trip-progress-meta"><span id="progressLabel">День 1 из 7</span><span id="progressPercent">0%</span></div>
-              <div class="progress-track"><span id="progressBar"></span></div>
-            </div>
-            <button class="journey-row" id="journeyButton" type="button">
-              <span class="journey-icon" aria-hidden="true">→</span>
-              <span class="journey-copy">
-                <small id="journeyKicker">маршрут поездки</small>
-                <strong id="journeyTitle">Рыбинск → Курган</strong>
-                <em id="journeyMeta">через Москву и Тюмень</em>
-              </span>
-              <b aria-hidden="true">›</b>
-            </button>
-          </div>
-
-          <article class="note-card">
-            <div class="note-top">
-              <span id="todayLabel">сейчас от мужа</span>
-              <span id="visitNumber">№1</span>
-            </div>
-            <blockquote id="dailyNote">Я уже скучаю, хотя ты ещё даже не уехала.</blockquote>
-
-            <button class="now-button" id="surpriseButton" type="button">
-              <span>
-                <small id="surpriseStatus">для тебя кое-что есть</small>
-                <strong id="surpriseButtonLabel">открыть сюрприз</strong>
-              </span>
-              <b aria-hidden="true">♥</b>
-            </button>
-
-            <div class="quick-actions" aria-label="Быстрые действия">
-              <button class="quick-action hug-action" id="homeHugButton" type="button">
-                <span class="hold-ring" aria-hidden="true"><i>♥</i></span>
-                <span><strong>обнять</strong><small id="homeHugHint">удерживай</small></span>
-              </button>
-              <button class="quick-action" id="homeVoiceButton" type="button" hidden>
-                <span class="quick-icon" aria-hidden="true">▶</span>
-                <span><strong>голос</strong><small>услышать меня</small></span>
-              </button>
-              <button class="quick-action" id="anotherNote" type="button">
-                <span class="quick-icon" aria-hidden="true">✦</span>
-                <span><strong>ещё</strong><small>другая записка</small></span>
-              </button>
-            </div>
-          </article>
+    <main class="today" id="today">
+      <section class="day-head">
+        <div>
+          <p class="eyebrow" id="dayEyebrow">до поездки</p>
+          <h1 id="dayTitle">Пока ты ещё дома</h1>
+        </div>
+        <div class="day-meta">
+          <strong id="momentCounter">—</strong>
+          <span id="nextKnown">10 октября</span>
         </div>
       </section>
 
-      <section class="screen" data-screen="memories" aria-label="Наши фотографии">
-        <div class="screen-head">
-          <div><p class="eyebrow">на случай, если соскучишься</p><h2>Немного <em>нас</em></h2></div>
-          <span class="screen-count">16 фото</span>
+      <section class="moment-card" id="momentCard" aria-live="polite">
+        <div class="moment-top">
+          <span class="moment-type" id="momentType">для тебя</span>
+          <time id="momentTime"></time>
         </div>
-        <div class="screen-scroll">
-          <div class="memory-grid" id="memoryGrid"></div>
+
+        <div class="moment-media" id="momentMedia" hidden></div>
+
+        <div class="moment-copy">
+          <h2 id="momentTitle">Здесь будет первый момент</h2>
+          <p class="moment-text" id="momentText"></p>
+          <p class="moment-prompt" id="momentPrompt" hidden></p>
         </div>
+
+        <div class="moment-action" id="momentAction"></div>
       </section>
 
-      <section class="screen" data-screen="days" aria-label="Семь дней">
-        <div class="screen-head">
-          <div><p class="eyebrow">10 → 17 октября</p><h2>Семь дней <em>между нами</em></h2></div>
-          <span class="screen-count">8 глав</span>
-        </div>
-        <div class="screen-scroll">
-          <div class="days-grid" id="daysGrid"></div>
-        </div>
-      </section>
+      <div class="moment-nav" id="momentNav" hidden>
+        <button id="prevMoment" type="button" aria-label="Предыдущий момент">‹</button>
+        <div class="moment-dots" id="momentDots" aria-label="Моменты дня"></div>
+        <button id="nextMoment" type="button" aria-label="Следующий момент">›</button>
+      </div>
 
-      <section class="screen" data-screen="letters" aria-label="Письма">
-        <div class="screen-head">
-          <div><p class="eyebrow">конверты на всякий случай</p><h2>Открой, <em>когда…</em></h2></div>
-          <span class="screen-count">8 писем</span>
-        </div>
-        <div class="screen-scroll">
-          <div class="letters-grid" id="lettersGrid"></div>
-        </div>
-      </section>
-
-      <section class="screen" data-screen="more" aria-label="Ещё">
-        <div class="screen-head">
-          <div><p class="eyebrow">когда хочется поближе</p><h2>Я всё равно <em>рядом</em></h2></div>
-        </div>
-        <div class="screen-scroll more-scroll">
-          <section class="mini-card android-card">
-            <div class="mini-label">для android</div>
-            <h3>Отдельное приложение</h3>
-            <p>Тот же Trip, но с интерактивными уведомлениями: подготовленный сюрприз на день + случайные записки из общего пула.</p>
-            <a class="primary-button download-link" href="https://github.com/ivan-s-2001/trip/releases/download/android-latest/Trip-1.4.1.apk">скачать APK</a>
-          </section>
-
-          <section class="mini-card voice-card" id="voiceCard" hidden>
-            <div class="mini-label">голосовые</div>
-            <h3>Хочешь услышать меня?</h3>
-            <p id="voiceCardText">Иногда вместо текста здесь будет мой голос.</p>
-            <button class="primary-button" id="voiceCardButton" type="button">включить голосовое</button>
-          </section>
-
-          <section class="mini-card hug-card">
-            <div class="mini-label">семейная бухгалтерия</div>
-            <div class="hug-row"><div><h3 id="hugTitle">Банк объятий</h3><p id="hugStatus">Проценты начисляются любовью.</p></div><strong id="hugCount">24</strong></div>
-            <button class="primary-button" id="hugButton">+ отложить ещё одно</button>
-          </section>
-
-          <section class="mini-card">
-            <div class="mini-label">машина воспоминаний</div>
-            <h3 id="randomTitle">Мне тебя не хватает</h3>
-            <p id="randomMemory">Нажми — и я напомню тебе что-нибудь хорошее про нас.</p>
-            <button class="primary-button" id="randomMemoryButton">достать воспоминание</button>
-          </section>
-
-          <section class="mini-card">
-            <div class="mini-label">если вдруг забудешь</div>
-            <h3>За что я тебя люблю</h3>
-            <div class="reasons-list" id="reasonsList"></div>
-          </section>
-
-          <section class="mini-card finale-card">
-            <div class="mini-label">финальная глава</div>
-            <h3 id="finaleTitle">17 октября</h3>
-            <p id="finaleText">Этот блок пока тихо ждёт своего дня.</p>
-            <div class="finale-secret" id="finaleSecret" hidden>
-              <span>семь дней закончились</span>
-              <strong>Возвращайся ко мне.</strong>
-              <p>Я очень по тебе скучал.</p>
-            </div>
-          </section>
-        </div>
+      <section class="before-card" id="beforeCard">
+        <span>до начала поездки</span>
+        <strong id="beforeCountdown">—</strong>
+        <p>Само приложение начнёт жить по дням 10 октября.</p>
       </section>
     </main>
 
-    <nav class="bottom-nav" aria-label="Разделы">
-      <button class="nav-item is-active" data-target="home"><span class="nav-icon">⌂</span><span>сегодня</span></button>
-      <button class="nav-item" data-target="memories"><span class="nav-icon">◇</span><span>фото</span></button>
-      <button class="nav-item" data-target="days"><span class="nav-icon">7</span><span>дней</span></button>
-      <button class="nav-item" data-target="letters"><span class="nav-icon">✉</span><span>письма</span></button>
-      <button class="nav-item" data-target="more"><span class="nav-icon">♥</span><span>рядом</span></button>
-    </nav>
+    <footer class="dock">
+      <button class="dock-button hug-dock" id="globalHugButton" type="button">
+        <span class="dock-heart" id="dockHeart">♥</span>
+        <span><strong>обнять</strong><small>удерживай</small></span>
+      </button>
+      <button class="dock-button" id="archiveButton" type="button">
+        <span class="dock-icon">◌</span>
+        <span><strong>мы</strong><small>фото · письма · голос</small></span>
+      </button>
+      <button class="dock-button" id="routeButton" type="button">
+        <span class="dock-icon">→</span>
+        <span><strong>путь</strong><small id="routeDockMeta">через Москву и Тюмень</small></span>
+      </button>
+    </footer>
   </div>
 
-  <dialog class="modal" id="contentModal">
-    <button class="modal-close" id="modalClose" aria-label="Закрыть">×</button>
-    <div id="modalContent"></div>
+  <dialog class="sheet" id="sheet">
+    <button class="sheet-close" id="sheetClose" type="button" aria-label="Закрыть">×</button>
+    <div class="sheet-content" id="sheetContent"></div>
   </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./content.js"></script>
   <script src="./app.js" defer></script>
 </body>
 </html>
