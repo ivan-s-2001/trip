@@ -13,82 +13,67 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="app-shell">
+  <div class="app-shell" id="appShell">
     <header class="topbar">
       <div class="brand">
         <strong>мы</strong>
-        <span>10—17 октября</span>
+        <span id="topDate">10—17 октября</span>
       </div>
-      <div class="top-actions">
-        <button class="qa-button" id="qaButton" type="button" hidden>QA</button>
-        <button class="route-chip" id="routeChip" type="button">
-          <span id="routeDot">→</span>
-          <span id="routeShort">Рыбинск → Курган</span>
-        </button>
-      </div>
+      <button class="qa-button" id="qaButton" type="button" hidden>QA</button>
     </header>
 
-    <main class="today" id="today">
-      <section class="day-head">
-        <div>
-          <p class="eyebrow" id="dayEyebrow">до поездки</p>
-          <h1 id="dayTitle">Пока ты ещё дома</h1>
+    <main class="one-screen">
+      <section class="journey" id="journey" aria-live="polite">
+        <div class="journey-copy">
+          <span class="journey-kicker" id="journeyKicker">поездка</span>
+          <strong id="journeyTitle">Рыбинск → Курган</strong>
+          <small id="journeyMeta">через Москву и Тюмень</small>
         </div>
-        <div class="day-meta">
-          <strong id="momentCounter">—</strong>
-          <span id="nextKnown">10 октября</span>
+        <div class="journey-line" aria-hidden="true">
+          <span id="journeyProgress"></span>
         </div>
+        <div class="journey-points" id="journeyPoints" aria-hidden="true"></div>
       </section>
 
       <section class="moment-card" id="momentCard" aria-live="polite">
-        <div class="moment-top">
-          <span class="moment-type" id="momentType">для тебя</span>
+        <div class="moment-meta">
+          <span id="momentKind">для тебя</span>
+          <span id="momentPosition">1 / 8</span>
           <time id="momentTime"></time>
         </div>
 
         <div class="moment-media" id="momentMedia" hidden></div>
 
-        <div class="moment-copy">
-          <h2 id="momentTitle">Здесь будет первый момент</h2>
-          <p class="moment-text" id="momentText"></p>
-          <p class="moment-prompt" id="momentPrompt" hidden></p>
+        <div class="moment-copy" id="momentCopy">
+          <p class="moment-day" id="momentDay">10 октября</p>
+          <h1 id="momentTitle">Перед дорогой</h1>
+          <p id="momentText"></p>
+          <p class="qa-prompt" id="qaPrompt" hidden></p>
         </div>
 
         <div class="moment-action" id="momentAction"></div>
       </section>
 
-      <div class="moment-nav" id="momentNav" hidden>
-        <button id="prevMoment" type="button" aria-label="Предыдущий момент">‹</button>
-        <div class="moment-dots" id="momentDots" aria-label="Моменты дня"></div>
-        <button id="nextMoment" type="button" aria-label="Следующий момент">›</button>
+      <div class="swipe-hint" id="swipeHint" hidden>
+        <span>‹</span><small>свайп между открытыми моментами</small><span>›</span>
       </div>
-
-      <section class="before-card" id="beforeCard">
-        <span>до начала поездки</span>
-        <strong id="beforeCountdown">—</strong>
-        <p>Само приложение начнёт жить по дням 10 октября.</p>
-      </section>
     </main>
 
-    <footer class="dock">
-      <button class="dock-button hug-dock" id="globalHugButton" type="button">
-        <span class="dock-heart" id="dockHeart">♥</span>
-        <span><strong>обнять</strong><small>удерживай</small></span>
-      </button>
-      <button class="dock-button" id="archiveButton" type="button">
-        <span class="dock-icon">◌</span>
-        <span><strong>мы</strong><small>фото · письма · голос</small></span>
-      </button>
-      <button class="dock-button" id="routeButton" type="button">
-        <span class="dock-icon">→</span>
-        <span><strong>путь</strong><small id="routeDockMeta">через Москву и Тюмень</small></span>
+    <footer class="footer-state">
+      <div>
+        <span id="footerKicker">до начала поездки</span>
+        <strong id="footerValue">—</strong>
+      </div>
+      <button class="heart-button" id="globalHugButton" type="button" aria-label="Обнять">
+        <span class="heart-progress" id="heartProgress">♥</span>
+        <small>удерживай</small>
       </button>
     </footer>
   </div>
 
-  <dialog class="sheet" id="sheet">
-    <button class="sheet-close" id="sheetClose" type="button" aria-label="Закрыть">×</button>
-    <div class="sheet-content" id="sheetContent"></div>
+  <dialog class="qa-sheet" id="qaSheet">
+    <button class="qa-close" id="qaClose" type="button">×</button>
+    <div class="qa-content" id="qaContent"></div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
