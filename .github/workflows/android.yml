@@ -39,13 +39,13 @@ jobs:
       - name: Prepare APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk dist/Trip-1.4.1.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/Trip-1.5.0.apk
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Trip-Android-1.4.1
-          path: dist/Trip-1.4.1.apk
+          name: Trip-Android-1.5.0
+          path: dist/Trip-1.5.0.apk
 
       - name: Publish rolling Android release
         env:
@@ -58,4 +58,4 @@ jobs:
           else
             gh release create android-latest --title "Trip Android" --notes "Актуальная Android-сборка Trip. PWA внутри + локальные фиксированные и случайные уведомления."
           fi
-          gh release upload android-latest dist/Trip-1.4.1.apk --clobber
+          gh release upload android-latest dist/Trip-1.5.0.apk --clobber
