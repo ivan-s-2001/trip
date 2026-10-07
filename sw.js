@@ -1,5 +1,5 @@
-const CACHE = "trip-v7";
-const CORE = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./assets/icons/icon.svg"];
+const CACHE = "trip-v8";
+const CORE = ["./", "./index.html", "./styles.css", "./content.js", "./app.js", "./manifest.webmanifest", "./assets/icons/icon.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
@@ -17,7 +17,7 @@ self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   const isAppShell = url.origin === self.location.origin &&
-    (url.pathname.endsWith("/") || /\/(index\.html|styles\.css|app\.js|manifest\.webmanifest)$/.test(url.pathname));
+    (url.pathname.endsWith("/") || /\/(index\.html|styles\.css|content\.js|app\.js|manifest\.webmanifest)$/.test(url.pathname));
 
   if (isAppShell) {
     event.respondWith(
