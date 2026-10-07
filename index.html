@@ -21,7 +21,10 @@
         <span class="brand-mark">мы</span>
         <span class="brand-date">10—17.10.26</span>
       </div>
-      <button class="install-button" id="installButton" hidden>На экран</button>
+      <div class="topbar-actions">
+        <button class="qa-button" id="qaButton" type="button" hidden>QA</button>
+        <button class="install-button" id="installButton" hidden>На экран</button>
+      </div>
     </header>
 
     <main class="screen-stack" id="screenStack">
@@ -45,6 +48,15 @@
               <div class="trip-progress-meta"><span id="progressLabel">День 1 из 7</span><span id="progressPercent">0%</span></div>
               <div class="progress-track"><span id="progressBar"></span></div>
             </div>
+            <button class="journey-row" id="journeyButton" type="button">
+              <span class="journey-icon" aria-hidden="true">→</span>
+              <span class="journey-copy">
+                <small id="journeyKicker">маршрут поездки</small>
+                <strong id="journeyTitle">Рыбинск → Барнаул</strong>
+                <em id="journeyMeta">через Москву и Тюмень</em>
+              </span>
+              <b aria-hidden="true">›</b>
+            </button>
           </div>
 
           <article class="note-card">
