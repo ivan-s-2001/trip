@@ -220,7 +220,7 @@ public final class NotificationScheduler {
                     atZoneTime(11, 3, 55, "Asia/Yekaterinburg"),
                     CHANNEL_TRIP,
                     "Тюмень ✓",
-                    "Самолётный этап позади. Дальше — дорога из Тюмени в Барнаул.",
+                    "Самолётный этап позади. Дальше — дорога из Тюмени в Курган.",
                     "home",
                     null
             );
