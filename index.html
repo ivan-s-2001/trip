@@ -13,63 +13,41 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="app-shell" id="appShell">
-    <header class="topbar">
-      <div class="brand">
-        <strong>мы</strong>
-        <span id="topDate">10—17 октября</span>
+  <main class="scene" id="scene">
+    <header class="scene-top">
+      <div class="scene-context">
+        <span id="sceneDate">10—17 октября</span>
+        <strong id="sceneStatus">Рыбинск → Курган</strong>
       </div>
+      <button class="heart" id="quickHug" type="button" aria-label="Обнять">♥</button>
       <button class="qa-button" id="qaButton" type="button" hidden>QA</button>
     </header>
 
-    <main class="one-screen">
-      <section class="journey" id="journey" aria-live="polite">
-        <div class="journey-copy">
-          <span class="journey-kicker" id="journeyKicker">поездка</span>
-          <strong id="journeyTitle">Рыбинск → Курган</strong>
-          <small id="journeyMeta">через Москву и Тюмень</small>
-        </div>
-        <div class="journey-line" aria-hidden="true">
-          <span id="journeyProgress"></span>
-        </div>
-        <div class="journey-points" id="journeyPoints" aria-hidden="true"></div>
-      </section>
+    <section class="scene-main" id="sceneMain" aria-live="polite">
+      <div class="media" id="media" hidden></div>
 
-      <section class="moment-card" id="momentCard" aria-live="polite">
-        <div class="moment-meta">
-          <span id="momentKind">для тебя</span>
-          <span id="momentPosition">1 / 8</span>
-          <time id="momentTime"></time>
-        </div>
-
-        <div class="moment-media" id="momentMedia" hidden></div>
-
-        <div class="moment-copy" id="momentCopy">
-          <p class="moment-day" id="momentDay">10 октября</p>
-          <h1 id="momentTitle">Перед дорогой</h1>
-          <p id="momentText"></p>
-          <p class="qa-prompt" id="qaPrompt" hidden></p>
-        </div>
-
-        <div class="moment-action" id="momentAction"></div>
-      </section>
-
-      <div class="swipe-hint" id="swipeHint" hidden>
-        <span>‹</span><small>свайп между открытыми моментами</small><span>›</span>
+      <div class="copy">
+        <p class="kicker" id="kicker">до поездки</p>
+        <h1 id="title">Пока ты ещё дома</h1>
+        <p class="text" id="text"></p>
+        <p class="qa-prompt" id="qaPrompt" hidden></p>
       </div>
-    </main>
 
-    <footer class="footer-state">
-      <div>
-        <span id="footerKicker">до начала поездки</span>
-        <strong id="footerValue">—</strong>
+      <div class="action" id="action"></div>
+    </section>
+
+    <footer class="scene-bottom">
+      <div class="next" id="next">
+        <span id="nextLabel">до начала поездки</span>
+        <strong id="nextValue">—</strong>
       </div>
-      <button class="heart-button" id="globalHugButton" type="button" aria-label="Обнять">
-        <span class="heart-progress" id="heartProgress">♥</span>
-        <small>удерживай</small>
-      </button>
+      <div class="route-mini" id="routeMini" aria-label="Текущий путь">
+        <span id="routeFrom">Рыбинск</span>
+        <i></i>
+        <span id="routeTo">Курган</span>
+      </div>
     </footer>
-  </div>
+  </main>
 
   <dialog class="qa-sheet" id="qaSheet">
     <button class="qa-close" id="qaClose" type="button">×</button>
