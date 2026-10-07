@@ -1,0 +1,61 @@
+name: Build Android QA APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-qa.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build QA APK
+        run: gradle -p android :app:assembleQa --stacktrace
+
+      - name: Prepare QA APK
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/qa/app-qa.apk dist/Trip-QA-1.4.0.apk
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trip-QA-1.4.0
+          path: dist/Trip-QA-1.4.0.apk
+
+      - name: Publish rolling QA release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag -f qa-latest "$GITHUB_SHA"
+          git push -f origin qa-latest
+          if gh release view qa-latest >/dev/null 2>&1; then
+            gh release edit qa-latest --title "Trip QA" --notes "Тестовая сборка Trip: симуляция дат 10–17 октября, дорожные состояния, открытие контента и тестовые push/deep links."
+          else
+            gh release create qa-latest --title "Trip QA" --notes "Тестовая сборка Trip: симуляция дат 10–17 октября, дорожные состояния, открытие контента и тестовые push/deep links."
+          fi
+          gh release upload qa-latest dist/Trip-QA-1.4.0.apk --clobber
