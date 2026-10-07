@@ -1,50 +1,42 @@
 const CONTENT = window.TRIP_CONTENT;
 const $ = (id) => document.getElementById(id);
 
-const CONFIG = {
-  departure: new Date("2026-10-10T00:00:00+03:00"),
-  returnFlight: new Date("2026-10-17T04:45:00+05:00"),
+const TIMES = {
+  tripStart: new Date("2026-10-10T00:00:00+03:00"),
+  su1502Dep: new Date("2026-10-10T23:00:00+03:00"),
+  su1502Arr: new Date("2026-10-11T03:45:00+05:00"),
+  anniversary: new Date("2026-10-16T00:00:00+05:00"),
+  su1503Dep: new Date("2026-10-17T04:45:00+05:00"),
+  su1503Arr: new Date("2026-10-17T05:35:00+03:00"),
 };
 
 const FLIGHTS = {
-  outbound: {
-    flight:"SU 1502", carrier:"Аэрофлот", aircraft:"Airbus A320",
-    from:"SVO Шереметьево · терминал B", to:"TJM Рощино",
-    departure:"10 октября · 23:00", arrival:"11 октября · 03:45",
-    duration:"2 ч 45 мин"
+  SU1502: {
+    number:"SU 1502", carrier:"Аэрофлот", aircraft:"Airbus A320",
+    fromCode:"SVO", fromCity:"Москва", fromExtra:"Шереметьево · B",
+    toCode:"TJM", toCity:"Тюмень", toExtra:"Рощино",
+    departure:TIMES.su1502Dep, arrival:TIMES.su1502Arr,
+    departureLabel:"23:00", arrivalLabel:"03:45", duration:"2 ч 45 мин"
   },
-  back: {
-    flight:"SU 1503", carrier:"Аэрофлот", aircraft:"Airbus A320",
-    from:"TJM Рощино", to:"SVO Шереметьево · терминал B",
-    departure:"17 октября · 04:45", arrival:"17 октября · 05:35",
-    duration:"2 ч 50 мин"
+  SU1503: {
+    number:"SU 1503", carrier:"Аэрофлот", aircraft:"Airbus A320",
+    fromCode:"TJM", fromCity:"Тюмень", fromExtra:"Рощино",
+    toCode:"SVO", toCity:"Москва", toExtra:"Шереметьево · B",
+    departure:TIMES.su1503Dep, arrival:TIMES.su1503Arr,
+    departureLabel:"04:45", arrivalLabel:"05:35", duration:"2 ч 50 мин"
   }
 };
 
-const ROUTE = {
-  outbound: [
-    {icon:"⌂", title:"Рыбинск → Москва", meta:"Транспорт и время ещё добавить", unknown:true},
-    {icon:"→", title:"Москва → Шереметьево", meta:"Терминал B · время трансфера ещё добавить", unknown:true},
-    {icon:"✈", title:"SU 1502 · Москва → Тюмень", meta:"Аэрофлот · SVO B · 10 окт 23:00 → TJM 11 окт 03:45 · 2 ч 45 мин · Airbus A320"},
-    {icon:"→", title:"Тюмень → Курган", meta:"Транспорт и время ещё добавить", unknown:true},
-  ],
-  back: [
-    {icon:"→", title:"Курган → Тюмень", meta:"Транспорт и время ещё добавить", unknown:true},
-    {icon:"✈", title:"SU 1503 · Тюмень → Москва", meta:"Аэрофлот · TJM 17 окт 04:45 → SVO B 05:35 · 2 ч 50 мин · Airbus A320"},
-    {icon:"⌂", title:"Москва → Рыбинск", meta:"Транспорт и время после прилёта ещё добавить", unknown:true},
-  ]
-};
-
 const TYPE_LABELS = {
-  letter:"письмо", hug:"объятие", photo:"фотография", care:"забота",
-  memory:"воспоминание", "photo-task":"маленький кадр", voice:"голос",
-  route:"дорога", question:"для тебя", reason:"одна причина", gift:"после возвращения",
-  anniversary:"наш день", five:"пять лет", home:"домой"
+  letter:"письмо", hug:"объятие", photo:"фото", care:"забота",
+  memory:"воспоминание", "photo-task":"момент", voice:"голос",
+  route:"дорога", question:"выбор", reason:"одна причина", gift:"для нас",
+  anniversary:"наш день", five:"5 лет", home:"домой"
 };
 
-let view = { day:null, index:0, forced:false };
-let touchStartX = 0;
-let touchStartY = 0;
+let state = {day:null,index:0,forced:false};
+let startX = 0;
+let startY = 0;
 
 function isQa(){
   return new URLSearchParams(location.search).get("qa") === "1";
@@ -52,586 +44,541 @@ function isQa(){
 
 function now(){
   if(isQa()){
-    const qa = Number(localStorage.getItem("trip-qa-now"));
-    if(Number.isFinite(qa) && qa > 0) return new Date(qa);
+    const forced = Number(localStorage.getItem("trip-qa-now"));
+    if(Number.isFinite(forced) && forced > 0) return new Date(forced);
   }
   return new Date();
 }
 
-function dayNumber(date = now()){
-  const d = date.getDate();
-  const m = date.getMonth();
-  const y = date.getFullYear();
-  if(y === 2026 && m === 9 && d >= 10 && d <= 17) return d;
-  return null;
+function pad(n){ return String(n).padStart(2,"0"); }
+
+function dayNumber(date=now()){
+  const y=date.getFullYear(), m=date.getMonth(), d=date.getDate();
+  return y===2026 && m===9 && d>=10 && d<=17 ? d : null;
 }
 
-function minutesNow(date = now()){
-  return date.getHours() * 60 + date.getMinutes();
+function localMinutes(date=now()){
+  return date.getHours()*60+date.getMinutes();
 }
 
-function parseMinutes(value){
-  const [h,m] = value.split(":").map(Number);
-  return h * 60 + m;
+function minutesOf(value){
+  const [h,m]=value.split(":").map(Number);
+  return h*60+m;
 }
 
-function unlockedIndex(day, date = now()){
-  const moments = CONTENT.days[day] || [];
-  if(!moments.length) return 0;
-  if(isQa() && localStorage.getItem("trip-qa-unlock-all") === "1") return moments.length - 1;
-  const currentDay = dayNumber(date);
-  if(currentDay > day) return moments.length - 1;
-  if(currentDay < day) return -1;
-  let last = -1;
-  for(let i=0;i<moments.length;i++){
-    if(parseMinutes(moments[i].time) <= minutesNow(date)) last = i;
+function unlockedIndex(day,date=now()){
+  const moments=CONTENT.days[day]||[];
+  if(!moments.length) return -1;
+  if(isQa() && localStorage.getItem("trip-qa-unlock-all")==="1") return moments.length-1;
+
+  const currentDay=dayNumber(date);
+  if(currentDay===null){
+    if(date<TIMES.tripStart) return -1;
+    return day===17 ? moments.length-1 : -1;
+  }
+  if(currentDay>day) return moments.length-1;
+  if(currentDay<day) return -1;
+
+  let last=-1;
+  const mins=localMinutes(date);
+  moments.forEach((m,i)=>{ if(minutesOf(m.time)<=mins) last=i; });
+
+  if(day===17 && localStorage.getItem("trip-home-arrived")!=="1"){
+    last=Math.min(last,6);
   }
   return last;
 }
 
-function routeState(date = now()){
-  const t = date.getTime();
-  const outDep = new Date("2026-10-10T23:00:00+03:00").getTime();
-  const outArr = new Date("2026-10-11T03:45:00+05:00").getTime();
-  const day12 = new Date("2026-10-12T00:00:00+05:00").getTime();
-  const day16 = new Date("2026-10-16T00:00:00+05:00").getTime();
-  const backDep = new Date("2026-10-17T04:45:00+05:00").getTime();
-  const backArr = new Date("2026-10-17T05:35:00+03:00").getTime();
-
-  if(t < new Date("2026-10-10T00:00:00+03:00").getTime())
-    return {icon:"→", short:"Рыбинск → Курган", meta:"через Москву и Тюмень"};
-  if(t < outDep)
-    return {icon:"→", short:"Рыбинск → SVO", meta:"SU1502 · 23:00"};
-  if(t < outArr)
-    return {icon:"✈", short:"Москва → Тюмень", meta:"SU1502 · в пути"};
-  if(t < day12)
-    return {icon:"→", short:"Тюмень → Курган", meta:"наземный участок"};
-  if(t < day16)
-    return {icon:"♥", short:"Курган", meta:"командировка"};
-  if(t < backDep)
-    return {icon:"→", short:"Курган → Тюмень", meta:"к SU1503"};
-  if(t < backArr)
-    return {icon:"✈", short:"Тюмень → Москва", meta:"SU1503 · в пути"};
-  if(localStorage.getItem("trip-home-arrived") === "1")
-    return {icon:"♥", short:"Рыбинск", meta:"дома"};
-  return {icon:"⌂", short:"Москва → Рыбинск", meta:"последний участок"};
+function duration(ms){
+  if(ms<=0) return "сейчас";
+  const min=Math.ceil(ms/60000);
+  if(min<60) return `${min} мин`;
+  const h=Math.floor(min/60);
+  const rest=min%60;
+  if(h<24) return rest ? `${h} ч ${rest} мин` : `${h} ч`;
+  const d=Math.floor(h/24);
+  return `${d} д ${h%24} ч`;
 }
 
-function dayHeading(day){
-  if(day === 10) return ["10 октября","Дорога начинается"];
-  if(day === 11) return ["11 октября","Первый день далеко"];
-  if(day === 12) return ["12 октября","Обычный день там"];
-  if(day === 13) return ["13 октября","Уже не начало"];
-  if(day === 14) return ["14 октября","Половина позади"];
-  if(day === 15) return ["15 октября","Уже правда скоро"];
-  if(day === 16) return ["16 октября · 5 лет","Наш день"];
-  if(day === 17) return ["17 октября","Дорога домой"];
-  return ["до поездки","Пока ты ещё дома"];
+function between(date,a,b){
+  const t=date.getTime();
+  return t>=a.getTime() && t<b.getTime();
+}
+
+function flightProgress(date,flight){
+  const total=flight.arrival-flight.departure;
+  const elapsed=date-flight.departure;
+  return Math.max(0,Math.min(1,elapsed/total));
+}
+
+function tripPhase(date=now()){
+  if(date<TIMES.tripStart){
+    return {
+      kicker:"поездка",
+      title:"Рыбинск → Курган",
+      meta:`старт 10 октября · через Москву и Тюмень`,
+      progress:0,
+      points:["Рыбинск","Москва","Тюмень","Курган"],
+      footerKicker:"до начала поездки",
+      footerValue:duration(TIMES.tripStart-date)
+    };
+  }
+
+  if(date<TIMES.su1502Dep){
+    return {
+      kicker:"дорога туда",
+      title:"Рыбинск → Москва → SVO",
+      meta:`SU1502 · терминал B · вылет через ${duration(TIMES.su1502Dep-date)}`,
+      progress:.24,
+      points:["Рыбинск","Москва","SVO","Тюмень","Курган"],
+      footerKicker:"следующий известный этап",
+      footerValue:"SU1502 · 23:00"
+    };
+  }
+
+  if(between(date,TIMES.su1502Dep,TIMES.su1502Arr)){
+    const p=flightProgress(date,FLIGHTS.SU1502);
+    return {
+      kicker:"в полёте · SU1502",
+      title:"Москва → Тюмень",
+      meta:`посадка 03:45 · осталось ${duration(TIMES.su1502Arr-date)}`,
+      progress:.34 + p*.22,
+      points:["SVO","✈","TJM"],
+      flight:"SU1502",
+      footerKicker:"до посадки",
+      footerValue:duration(TIMES.su1502Arr-date)
+    };
+  }
+
+  if(date<TIMES.anniversary){
+    const day=dayNumber(date);
+    return {
+      kicker: day===11 ? "после рейса" : "командировка",
+      title: day===11 ? "Тюмень → Курган" : "Курган",
+      meta: day===11 ? "наземный участок · время пока не задано" : `домой 17 октября · SU1503 04:45`,
+      progress: day===11 ? .61 : .66,
+      points: day===11 ? ["Тюмень","Курган"] : ["Курган","17.10","домой"],
+      footerKicker: day===11 ? "следующий этап" : "до дороги домой",
+      footerValue: day===11 ? "Тюмень → Курган" : duration(TIMES.su1503Dep-date)
+    };
+  }
+
+  if(date<TIMES.su1503Dep){
+    return {
+      kicker: dayNumber(date)===16 ? "наш день · 5 лет" : "дорога домой",
+      title: dayNumber(date)===16 ? "Курган · завтра домой" : "Курган → Тюмень",
+      meta:"SU1503 · Тюмень 04:45 → Москва 05:35",
+      progress:.72,
+      points:["Курган","Тюмень","Москва","Рыбинск"],
+      footerKicker:"до SU1503",
+      footerValue:duration(TIMES.su1503Dep-date)
+    };
+  }
+
+  if(between(date,TIMES.su1503Dep,TIMES.su1503Arr)){
+    const p=flightProgress(date,FLIGHTS.SU1503);
+    return {
+      kicker:"в полёте · SU1503",
+      title:"Тюмень → Москва",
+      meta:`посадка 05:35 · осталось ${duration(TIMES.su1503Arr-date)}`,
+      progress:.78+p*.13,
+      points:["TJM","✈","SVO"],
+      flight:"SU1503",
+      footerKicker:"до посадки",
+      footerValue:duration(TIMES.su1503Arr-date)
+    };
+  }
+
+  if(localStorage.getItem("trip-home-arrived")==="1"){
+    return {
+      kicker:"дома",
+      title:"Рыбинск ♥",
+      meta:"поездка закончилась",
+      progress:1,
+      points:["Курган","Тюмень","Москва","Рыбинск"],
+      footerKicker:"маршрут",
+      footerValue:"завершён"
+    };
+  }
+
+  return {
+    kicker:"последний участок",
+    title:"Москва → Рыбинск",
+    meta:"после SVO · точное время пока не задано",
+    progress:.93,
+    points:["SVO","Москва","Рыбинск"],
+    footerKicker:"следующий этап",
+    footerValue:"домой"
+  };
+}
+
+function renderJourney(date=now()){
+  const phase=tripPhase(date);
+  $("journey").dataset.flight=phase.flight?"true":"false";
+  $("journeyKicker").textContent=phase.kicker;
+  $("journeyTitle").textContent=phase.title;
+  $("journeyMeta").textContent=phase.meta;
+  $("journeyProgress").style.width=`${Math.round(phase.progress*100)}%`;
+  $("journeyPoints").innerHTML=phase.points.map(p=>`<span>${p}</span>`).join("");
+  $("footerKicker").textContent=phase.footerKicker;
+  $("footerValue").textContent=phase.footerValue;
+}
+
+function heading(day){
+  if(day===10) return "10 октября";
+  if(day===11) return "11 октября";
+  if(day===12) return "12 октября";
+  if(day===13) return "13 октября";
+  if(day===14) return "14 октября";
+  if(day===15) return "15 октября";
+  if(day===16) return "16 октября · 5 лет";
+  if(day===17) return "17 октября";
+  return "до поездки";
 }
 
 function showToast(text){
-  const toast = $("toast");
-  toast.textContent = text;
-  toast.classList.add("show");
-  clearTimeout(window.__toast);
-  window.__toast = setTimeout(() => toast.classList.remove("show"), 1600);
+  const el=$("toast");
+  el.textContent=text;
+  el.classList.add("show");
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer=setTimeout(()=>el.classList.remove("show"),1500);
 }
 
-function openSheet(html){
-  $("sheetContent").innerHTML = html;
-  if(!$("sheet").open){
-    try{ history.pushState({tripSheet:true},""); }catch(_){}
-    $("sheet").showModal();
-  }
+function renderBefore(){
+  $("momentCard").dataset.type="letter";
+  $("momentKind").textContent="до поездки";
+  $("momentPosition").textContent="—";
+  $("momentTime").textContent="";
+  $("momentDay").textContent="10 октября";
+  $("momentTitle").textContent="Пока ты ещё дома";
+  $("momentText").textContent="";
+  $("qaPrompt").hidden=!isQa();
+  $("qaPrompt").textContent="До 10 октября центральный экран остаётся спокойным. Здесь можно позже поставить одну короткую твою фразу перед поездкой.";
+  $("momentMedia").hidden=true;
+  $("momentAction").innerHTML="";
+  $("swipeHint").hidden=true;
 }
 
-function closeSheet(){
-  if(!$("sheet").open) return;
-  if(history.state?.tripSheet) history.back();
-  else $("sheet").close();
-}
-
-function updateRouteUI(date = now()){
-  const state = routeState(date);
-  $("routeDot").textContent = state.icon;
-  $("routeShort").textContent = state.short;
-  $("routeDockMeta").textContent = state.meta;
-}
-
-function beforeTrip(date = now()){
-  return date < CONFIG.departure;
-}
-
-function formatDuration(ms){
-  if(ms <= 0) return "скоро";
-  const total = Math.floor(ms / 1000);
-  const days = Math.floor(total / 86400);
-  const hours = Math.floor((total % 86400) / 3600);
-  const mins = Math.floor((total % 3600) / 60);
-  if(days) return `${days} д ${hours} ч`;
-  if(hours) return `${hours} ч ${mins} мин`;
-  return `${Math.max(1,mins)} мин`;
-}
-
-function updateBefore(date = now()){
-  const before = beforeTrip(date);
-  $("beforeCard").hidden = !before;
-  $("momentCard").hidden = before;
-  $("momentNav").hidden = before;
-  if(!before) return;
-  const [eye,title] = dayHeading(null);
-  $("dayEyebrow").textContent = eye;
-  $("dayTitle").textContent = title;
-  $("momentCounter").textContent = "—";
-  $("nextKnown").textContent = "10 октября";
-  $("beforeCountdown").textContent = formatDuration(CONFIG.departure - date);
-}
-
-function currentOrLatestIndex(day, date = now()){
-  const last = unlockedIndex(day,date);
-  return Math.max(0,last);
-}
-
-function setView(day,index,{forced=false}={}){
-  const moments = CONTENT.days[day] || [];
+function setMoment(day,index,{forced=false}={}){
+  const moments=CONTENT.days[day]||[];
   if(!moments.length) return;
-  view.day = day;
-  view.index = Math.max(0,Math.min(index,moments.length-1));
-  view.forced = forced;
-  renderDay();
+  state={day,index:Math.max(0,Math.min(index,moments.length-1)),forced};
+  renderMoment();
 }
 
-function renderDay(){
-  const day = view.day;
-  if(!day) return;
-  const moments = CONTENT.days[day];
-  const moment = moments[view.index];
-  const date = now();
-  const unlocked = unlockedIndex(day,date);
-  const locked = !view.forced && view.index > unlocked;
-  const [eye,title] = dayHeading(day);
+function renderMoment(){
+  const moments=CONTENT.days[state.day]||[];
+  const moment=moments[state.index];
+  if(!moment) return;
 
-  $("dayEyebrow").textContent = eye;
-  $("dayTitle").textContent = title;
-  $("momentCounter").textContent = `${view.index+1}/8`;
-  $("nextKnown").textContent = moment.time;
-  $("momentCard").dataset.type = moment.type;
-  $("momentType").textContent = TYPE_LABELS[moment.type] || "для тебя";
-  $("momentTime").textContent = moment.time;
-  $("momentTitle").textContent = locked ? "Ещё не время" : moment.title;
+  const unlocked=unlockedIndex(state.day);
+  const locked=!state.forced && state.index>unlocked;
+
+  $("momentCard").dataset.type=moment.type;
+  $("momentKind").textContent=TYPE_LABELS[moment.type]||"для тебя";
+  $("momentPosition").textContent=`${state.index+1} / 8`;
+  $("momentTime").textContent=moment.time;
+  $("momentDay").textContent=heading(state.day);
+  $("momentTitle").textContent=locked?"Ещё не время":moment.title;
 
   renderMedia(moment,locked);
   renderCopy(moment,locked);
   renderAction(moment,locked);
-  renderDots(day,unlocked);
 
-  $("prevMoment").disabled = view.index <= 0;
-  $("nextMoment").disabled = view.index >= moments.length-1 || (!isQa() && view.index >= unlocked);
+  $("swipeHint").hidden=unlocked<=0;
 }
 
 function renderCopy(moment,locked){
-  const text = $("momentText");
-  const prompt = $("momentPrompt");
+  const text=$("momentText");
+  const prompt=$("qaPrompt");
 
   if(locked){
-    text.textContent = "";
-    prompt.hidden = false;
-    prompt.textContent = "Этот момент откроется позже сегодня.";
+    text.textContent="";
+    prompt.hidden=false;
+    prompt.textContent=`Откроется в ${moment.time}`;
     return;
   }
 
-  const actual = Array.isArray(moment.text) ? moment.text.filter(Boolean).join(" · ") : moment.text;
-  text.textContent = actual || "";
+  const actual=Array.isArray(moment.text) ? moment.text.filter(Boolean).join(" · ") : (moment.text||"");
+  text.textContent=actual;
 
-  if(isQa() || !actual){
-    prompt.hidden = false;
-    prompt.textContent = moment.theme;
+  if(isQa()){
+    prompt.hidden=false;
+    prompt.textContent=moment.theme;
   }else{
-    prompt.hidden = true;
-    prompt.textContent = "";
+    prompt.hidden=true;
+    prompt.textContent="";
   }
 }
 
 function renderMedia(moment,locked){
-  const media = $("momentMedia");
-  media.innerHTML = "";
-  media.hidden = true;
-  if(locked) return;
+  const mount=$("momentMedia");
+  mount.innerHTML="";
+  mount.hidden=true;
+  if(locked || moment.type!=="photo") return;
 
-  if(moment.type === "photo"){
-    media.hidden = false;
-    const files = Array.isArray(moment.media) ? moment.media : [moment.media];
-    const file = files[0];
-    media.innerHTML = `
-      <div class="media-placeholder"><strong>${isQa() ? moment.theme : "наша фотография"}</strong></div>
-      ${file ? `<img src="./assets/photos/${file}" alt="" onerror="this.style.display='none'">` : ""}
-    `;
-  }
+  const file=Array.isArray(moment.media)?moment.media[0]:moment.media;
+  if(!file) return;
+
+  mount.hidden=false;
+  mount.innerHTML=isQa()
+    ? `<div class="media-placeholder"><strong>${moment.theme}</strong></div><img src="./assets/photos/${file}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.remove()">`
+    : `<img src="./assets/photos/${file}" alt="" onerror="this.parentElement.hidden=true;this.remove()">`;
 }
 
 function renderAction(moment,locked){
-  const mount = $("momentAction");
-  mount.innerHTML = "";
+  const mount=$("momentAction");
+  mount.innerHTML="";
   if(locked) return;
 
-  if(moment.type === "hug"){
-    mount.innerHTML = `
+  if(moment.type==="hug"){
+    mount.innerHTML=`
       <button class="hold-button" type="button">
         <span class="hold-ring"><span>♥</span></span>
         <span><strong>обнять</strong><br><small>удерживай</small></span>
       </button>`;
-    setupHold(mount.querySelector(".hold-button"), mount.querySelector(".hold-ring"));
+    setupHold(mount.querySelector(".hold-button"),mount.querySelector(".hold-ring"));
     return;
   }
 
-  if(moment.type === "voice"){
-    mount.innerHTML = `
-      <div class="voice-box">
-        ${isQa() ? `<p class="moment-prompt">Файл: ${moment.media}</p>` : ""}
-        <audio controls preload="metadata" src="./assets/audio/${moment.media}"></audio>
-      </div>`;
+  if(moment.type==="voice"){
+    mount.innerHTML=`<div class="voice-box"><audio controls preload="metadata" src="./assets/audio/${moment.media}"></audio></div>`;
     return;
   }
 
-  if(moment.type === "question"){
-    const selected = localStorage.getItem(`trip-choice-${view.day}-${view.index}`);
-    mount.innerHTML = `<div class="choice-grid">${moment.choices.map(choice =>
-      `<button type="button" data-choice="${choice}" class="${selected===choice?"is-selected":""}">${choice}</button>`
-    ).join("")}</div>`;
-    mount.querySelectorAll("[data-choice]").forEach(btn => btn.addEventListener("click",()=>{
-      localStorage.setItem(`trip-choice-${view.day}-${view.index}`,btn.dataset.choice);
+  if(moment.type==="question"){
+    const key=`trip-choice-${state.day}-${state.index}`;
+    const selected=localStorage.getItem(key);
+    mount.innerHTML=`<div class="choice-grid">${moment.choices.map(c=>`<button type="button" data-choice="${c}" class="${selected===c?"is-selected":""}">${c}</button>`).join("")}</div>`;
+    mount.querySelectorAll("[data-choice]").forEach(btn=>btn.addEventListener("click",()=>{
+      localStorage.setItem(key,btn.dataset.choice);
       renderAction(moment,false);
       showToast("сохранил ♥");
     }));
     return;
   }
 
-  if(moment.type === "five"){
-    const items = Array.isArray(moment.text) ? moment.text : ["","","","",""];
-    mount.innerHTML = `<div class="five-list">${items.map((item,i)=>
-      `<div class="five-item">${item || (isQa() ? `${i+1}. твой пункт` : `${i+1}`)}</div>`
-    ).join("")}</div>`;
+  if(moment.type==="five"){
+    const items=Array.isArray(moment.text)?moment.text:["","","","",""];
+    mount.innerHTML=`<div class="five-list">${items.map((item,i)=>`<div class="five-item">${item||(isQa()?`${i+1}. твой пункт`:`${i+1}`)}</div>`).join("")}</div>`;
     return;
   }
 
-  if(moment.type === "route"){
-    const flight = view.day === 10 ? FLIGHTS.outbound : view.day === 17 ? FLIGHTS.back : null;
+  if(moment.type==="route"){
+    const flight=state.day===10?FLIGHTS.SU1502:state.day===17?FLIGHTS.SU1503:null;
     if(flight){
-      mount.innerHTML = `
-        <div class="route-mini">
-          <strong>${flight.flight} · ${flight.carrier}</strong>
-          <span>${flight.from} → ${flight.to}<br>${flight.departure} → ${flight.arrival} · ${flight.duration}<br>${flight.aircraft}</span>
-        </div>`;
-    }else{
-      mount.innerHTML = `<button class="primary" type="button" id="momentRouteButton">посмотреть путь</button>`;
-      mount.querySelector("#momentRouteButton")?.addEventListener("click",openRoute);
+      mount.innerHTML=flightCard(flight);
+    }else if(isQa()){
+      mount.innerHTML=`<div class="route-card"><strong>Наземный участок</strong><span>${moment.theme}</span></div>`;
     }
     return;
   }
 
-  if(moment.type === "home"){
-    const home = localStorage.getItem("trip-home-arrived") === "1";
+  if(moment.type==="home"){
+    const home=localStorage.getItem("trip-home-arrived")==="1";
     if(!home){
-      mount.innerHTML = `<button class="primary" type="button" id="markHomeButton">я уже дома</button>`;
-      mount.querySelector("#markHomeButton")?.addEventListener("click",()=>{
-        localStorage.setItem("trip-home-arrived","1");
-        updateRouteUI();
-        renderDay();
-        showToast("домой ♥");
-      });
+      mount.innerHTML=`<button class="primary" id="homeButton" type="button">я уже дома</button>`;
+      $("homeButton")?.addEventListener("click",markHome);
     }
   }
 }
 
-function renderDots(day,unlocked){
-  const moments = CONTENT.days[day];
-  $("momentDots").innerHTML = moments.map((_,i)=>
-    `<button class="moment-dot ${i===view.index?"is-active":""} ${i>unlocked&&!isQa()?"is-locked":""}" data-index="${i}" type="button" aria-label="Момент ${i+1}"></button>`
-  ).join("");
-  $("momentDots").querySelectorAll("[data-index]").forEach(dot => dot.addEventListener("click",()=>{
-    const i = Number(dot.dataset.index);
-    if(i > unlocked && !isQa()) return;
-    setView(day,i);
-  }));
+function flightCard(flight){
+  return `
+    <div class="route-card">
+      <div class="route-airports">
+        <div><small>${flight.fromCity}</small><b>${flight.fromCode}</b><small>${flight.departureLabel}</small></div>
+        <span class="route-plane">✈</span>
+        <div style="text-align:right"><small>${flight.toCity}</small><b>${flight.toCode}</b><small>${flight.arrivalLabel}</small></div>
+      </div>
+      <strong>${flight.number}</strong>
+      <span>${flight.carrier} · ${flight.aircraft} · ${flight.duration}<br>${flight.fromExtra} → ${flight.toExtra}</span>
+    </div>`;
+}
+
+function markHome(){
+  localStorage.setItem("trip-home-arrived","1");
+  renderJourney();
+  if(state.day===17){state.index=7;state.forced=true;renderMoment();}
+  showToast("дома ♥");
 }
 
 function setupHold(button,ring){
-  if(!button || !ring) return;
-  let start = 0, raf = 0, complete = false;
-  const duration = 1150;
+  if(!button||!ring) return;
+  let start=0,raf=0,done=false;
+  const durationMs=1100;
 
-  const reset = ()=>{
+  const reset=()=>{
     cancelAnimationFrame(raf);
     ring.style.setProperty("--hold","0");
-    start = 0;
+    start=0;
     button.classList.remove("is-holding");
   };
 
-  const tick = t =>{
+  const complete=()=>{
+    done=true;
+    localStorage.setItem("trip-hugs",String(Number(localStorage.getItem("trip-hugs")||0)+1));
+    navigator.vibrate?.([25,30,42]);
+    showToast("обнял ♥");
+    reset();
+  };
+
+  const tick=t=>{
     if(!start) return;
-    const p = Math.min(1,(t-start)/duration);
+    const p=Math.min(1,(t-start)/durationMs);
     ring.style.setProperty("--hold",String(p));
-    if(p >= 1){
-      complete = true;
-      localStorage.setItem("trip-hugs",String(Number(localStorage.getItem("trip-hugs")||0)+1));
-      navigator.vibrate?.([25,35,45]);
-      showToast("обнял ♥");
-      reset();
-      return;
-    }
-    raf = requestAnimationFrame(tick);
+    if(p>=1){complete();return;}
+    raf=requestAnimationFrame(tick);
   };
 
   button.addEventListener("pointerdown",e=>{
-    e.preventDefault();
-    complete = false;
-    button.classList.add("is-holding");
-    start = performance.now();
-    raf = requestAnimationFrame(tick);
+    e.preventDefault();done=false;button.classList.add("is-holding");start=performance.now();raf=requestAnimationFrame(tick);
   });
   ["pointerup","pointercancel","pointerleave"].forEach(type=>button.addEventListener(type,reset));
   button.addEventListener("click",e=>{
-    if(e.detail===0 && !complete){
-      localStorage.setItem("trip-hugs",String(Number(localStorage.getItem("trip-hugs")||0)+1));
-      showToast("обнял ♥");
-    }
-    complete = false;
+    if(e.detail===0&&!done) complete();
+    done=false;
   });
 }
 
-function openArchive(){
-  const a = CONTENT.archive;
-  openSheet(`
-    <p class="eyebrow">не разделы · просто наше</p>
-    <h3>Мы</h3>
+function sync(){
+  const date=now();
+  renderJourney(date);
 
-    <section class="sheet-section">
-      <h4>12 фотографий</h4>
-      <div class="archive-grid">
-        ${a.photos.map((p,i)=>`
-          <button class="archive-card" data-photo="${i}" type="button">
-            <span>фото ${String(i+1).padStart(2,"0")}</span>
-            <strong>${p.theme}</strong>
-          </button>`).join("")}
-      </div>
-    </section>
+  if(date<TIMES.tripStart){
+    state={day:null,index:0,forced:false};
+    renderBefore();
+    return;
+  }
 
-    <section class="sheet-section">
-      <h4>Открой, когда…</h4>
-      <div class="archive-grid">
-        ${a.letters.map((l,i)=>`
-          <button class="archive-card" data-letter="${i}" type="button">
-            <span>письмо</span><strong>${l.title}</strong>
-          </button>`).join("")}
-      </div>
-    </section>
+  const day=dayNumber(date)||17;
+  if(state.forced && state.day===day){
+    renderMoment();
+    return;
+  }
 
-    <section class="sheet-section">
-      <h4>Голос</h4>
-      <div class="archive-grid">
-        ${a.voices.map(v=>`
-          <button class="archive-card" data-voice="${v.file}" data-theme="${v.theme}" type="button">
-            <span>${v.day} октября</span><strong>${v.theme}</strong>
-          </button>`).join("")}
-      </div>
-    </section>
-  `);
-
-  const root = $("sheetContent");
-  root.querySelectorAll("[data-photo]").forEach(btn=>btn.addEventListener("click",()=>{
-    const p = a.photos[Number(btn.dataset.photo)];
-    openSheet(`
-      <p class="eyebrow">фотография</p><h3>${p.theme}</h3>
-      <div class="media-placeholder" style="min-height:260px"><strong>${isQa()?p.file:"наша фотография"}</strong></div>
-      ${isQa()? `<p>${p.theme}</p>` : ""}
-    `);
-  }));
-  root.querySelectorAll("[data-letter]").forEach(btn=>btn.addEventListener("click",()=>{
-    const l = a.letters[Number(btn.dataset.letter)];
-    openSheet(`<p class="eyebrow">открой, когда…</p><h3>${l.title.replace("Когда ","")}</h3><p>${isQa()?l.theme:""}</p>`);
-  }));
-  root.querySelectorAll("[data-voice]").forEach(btn=>btn.addEventListener("click",()=>{
-    const file = btn.dataset.voice;
-    openSheet(`<p class="eyebrow">голосовое</p><h3>${btn.dataset.theme}</h3><audio controls preload="metadata" src="./assets/audio/${file}" style="width:100%"></audio>`);
-  }));
+  const unlocked=unlockedIndex(day,date);
+  state={day,index:Math.max(0,unlocked),forced:false};
+  renderMoment();
 }
 
-function routeLeg(leg){
-  return `<article class="trip-leg">
-    <span class="trip-leg-icon">${leg.icon}</span>
-    <span class="trip-leg-copy">
-      <strong>${leg.title}</strong>
-      <span>${leg.meta}</span>
-      ${leg.unknown?'<small>нужно дополнить</small>':""}
-    </span>
-  </article>`;
+function move(delta){
+  if(!state.day) return;
+  const unlocked=unlockedIndex(state.day);
+  const next=state.index+delta;
+  if(next<0 || next>7) return;
+  if(!isQa() && next>unlocked) return;
+  setMoment(state.day,next,{forced:isQa()&&state.forced});
 }
 
-function openRoute(){
-  const canMarkHome = dayNumber() === 17 && localStorage.getItem("trip-home-arrived") !== "1";
-  openSheet(`
-    <p class="eyebrow">вся дорога</p>
-    <h3>Рыбинск → Курган → Рыбинск</h3>
-    <h4>Туда</h4>
-    ${ROUTE.outbound.map(routeLeg).join("")}
-    <h4>Обратно</h4>
-    ${ROUTE.back.map(routeLeg).join("")}
-    ${canMarkHome ? '<button class="primary" id="sheetHomeButton" type="button">я уже дома</button>' : ""}
-  `);
-  $("sheetContent").querySelector("#sheetHomeButton")?.addEventListener("click",()=>{
-    localStorage.setItem("trip-home-arrived","1");
-    updateRouteUI();
-    closeSheet();
-    if(view.day===17){ view.index=7; view.forced=true; renderDay(); }
-    showToast("домой ♥");
-  });
+function setupSwipe(){
+  const card=$("momentCard");
+  card.addEventListener("touchstart",e=>{
+    const t=e.changedTouches[0];startX=t.clientX;startY=t.clientY;
+  },{passive:true});
+  card.addEventListener("touchend",e=>{
+    const t=e.changedTouches[0];
+    const dx=t.clientX-startX,dy=t.clientY-startY;
+    if(Math.abs(dx)<50 || Math.abs(dx)<Math.abs(dy)*1.25) return;
+    move(dx<0?1:-1);
+  },{passive:true});
+}
+
+function handleIncoming(){
+  const params=new URLSearchParams(location.search);
+  const raw=params.get("surprise");
+  const match=raw?.match(/^day-(\d+)-(\d+)$/);
+  if(!match) return false;
+
+  const day=Number(match[1]),index=Number(match[2]);
+  if(!CONTENT.days[day]?.[index]) return false;
+
+  state={day,index,forced:true};
+  params.delete("surprise");
+  const rest=params.toString();
+  try{history.replaceState(null,"",location.pathname+(rest?"?"+rest:""));}catch(_){}
+  renderJourney();
+  renderMoment();
+  return true;
 }
 
 function setupQa(){
   if(!isQa()) return;
-  document.documentElement.classList.add("is-qa");
-  $("qaButton").hidden = false;
+  $("qaButton").hidden=false;
   $("qaButton").addEventListener("click",openQa);
+  $("qaClose").addEventListener("click",()=>$("qaSheet").close());
 }
 
-function setQaDate(day,hour=14,minute=0){
-  const offset = day === 10 ? "+03:00" : day === 17 && hour >= 6 ? "+03:00" : "+05:00";
-  const iso = `2026-10-${String(day).padStart(2,"0")}T${String(hour).padStart(2,"0")}:${String(minute).padStart(2,"0")}:00${offset}`;
+function qaSet(day,index=0){
+  const moment=CONTENT.days[day][index];
+  const zone=day===10?"+03:00":day===17&&index>0?"+03:00":"+05:00";
+  const iso=`2026-10-${pad(day)}T${moment.time}:00${zone}`;
   localStorage.setItem("trip-qa-now",String(new Date(iso).getTime()));
-  view.forced = false;
-  syncFromTime();
-  openQa();
-}
-
-function sendQaPush(day,index){
-  const key = `day-${day}-${index}`;
-  if(window.TripQA?.notify){
-    window.TripQA.notify(key);
-    showToast("push отправлен");
-  }else{
-    showToast("нужен QA APK");
-  }
+  state={day,index,forced:true};
+  renderJourney();renderMoment();openQa();
 }
 
 function openQa(){
-  const day = view.day || dayNumber() || 10;
-  const moments = CONTENT.days[day];
-  openSheet(`
-    <div class="qa-panel">
-      <span class="qa-badge">QA ONLY</span>
-      <h3>Проверка Trip</h3>
-      <div class="qa-status">Симуляция: <strong>${now().toLocaleString("ru-RU")}</strong><br>Текущий слот: <strong>${day} октября · ${view.index+1}/8</strong></div>
-      <div class="qa-grid">
-        ${[10,11,12,13,14,15,16,17].map(d=>`<button data-qa-day="${d}" class="${d===day?"is-active":""}" type="button">${d}.10</button>`).join("")}
-      </div>
-      <div class="qa-actions">
-        ${moments.map((m,i)=>`<button data-qa-slot="${i}" type="button">${i+1}. ${m.title}</button>`).join("")}
-      </div>
-      <div class="qa-actions">
-        <button id="qaPush" type="button">push этого слота</button>
-        <button id="qaUnlock" type="button">${localStorage.getItem("trip-qa-unlock-all")==="1"?"закрыть будущие":"открыть все"}</button>
-        <button id="qaRoute" type="button">маршрут</button>
-        <button id="qaHome" type="button">переключить «дома»</button>
-        <button id="qaReal" type="button">реальное время</button>
-      </div>
+  const day=state.day||dayNumber()||10;
+  const idx=state.index||0;
+  const moments=CONTENT.days[day];
+
+  $("qaContent").innerHTML=`
+    <span class="qa-badge">QA ONLY</span>
+    <h2>Один экран</h2>
+    <div class="qa-note">Симуляция: <strong>${now().toLocaleString("ru-RU")}</strong><br>Слот: <strong>${day}.10 · ${idx+1}/8</strong></div>
+    <div class="qa-grid">
+      ${[10,11,12,13,14,15,16,17].map(d=>`<button data-day="${d}" class="${d===day?"is-active":""}" type="button">${d}.10</button>`).join("")}
     </div>
-  `);
-  const root = $("sheetContent");
-  root.querySelectorAll("[data-qa-day]").forEach(btn=>btn.addEventListener("click",()=>setQaDate(Number(btn.dataset.qaDay))));
-  root.querySelectorAll("[data-qa-slot]").forEach(btn=>btn.addEventListener("click",()=>{
-    view.day=day;view.index=Number(btn.dataset.qaSlot);view.forced=true;renderDay();openQa();
-  }));
-  root.querySelector("#qaPush")?.addEventListener("click",()=>sendQaPush(day,view.index));
-  root.querySelector("#qaUnlock")?.addEventListener("click",()=>{
-    if(localStorage.getItem("trip-qa-unlock-all")==="1") localStorage.removeItem("trip-qa-unlock-all");
-    else localStorage.setItem("trip-qa-unlock-all","1");
-    renderDay();openQa();
+    <div class="qa-actions">
+      ${moments.map((m,i)=>`<button data-slot="${i}" type="button">${i+1}. ${m.title}</button>`).join("")}
+    </div>
+    <div class="qa-actions">
+      <button id="qaFlightOut" type="button">SU1502 · в полёте</button>
+      <button id="qaFlightBack" type="button">SU1503 · в полёте</button>
+      <button id="qaPush" type="button">push этого слота</button>
+      <button id="qaHome" type="button">домой / не дома</button>
+      <button id="qaReal" type="button">реальное время</button>
+    </div>`;
+
+  if(!$("qaSheet").open) $("qaSheet").showModal();
+  const root=$("qaContent");
+
+  root.querySelectorAll("[data-day]").forEach(b=>b.addEventListener("click",()=>qaSet(Number(b.dataset.day),0)));
+  root.querySelectorAll("[data-slot]").forEach(b=>b.addEventListener("click",()=>qaSet(day,Number(b.dataset.slot))));
+  root.querySelector("#qaFlightOut")?.addEventListener("click",()=>{
+    localStorage.setItem("trip-qa-now",String(new Date("2026-10-10T23:50:00+03:00").getTime()));
+    state={day:10,index:7,forced:true};renderJourney();renderMoment();openQa();
   });
-  root.querySelector("#qaRoute")?.addEventListener("click",openRoute);
+  root.querySelector("#qaFlightBack")?.addEventListener("click",()=>{
+    localStorage.setItem("trip-qa-now",String(new Date("2026-10-17T05:00:00+05:00").getTime()));
+    state={day:17,index:0,forced:true};renderJourney();renderMoment();openQa();
+  });
+  root.querySelector("#qaPush")?.addEventListener("click",()=>{
+    if(window.TripQA?.notify){window.TripQA.notify(`day-${day}-${idx}`);showToast("push отправлен");}
+    else showToast("нужен QA APK");
+  });
   root.querySelector("#qaHome")?.addEventListener("click",()=>{
     if(localStorage.getItem("trip-home-arrived")==="1") localStorage.removeItem("trip-home-arrived");
     else localStorage.setItem("trip-home-arrived","1");
-    updateRouteUI();renderDay();openQa();
+    renderJourney();openQa();
   });
   root.querySelector("#qaReal")?.addEventListener("click",()=>{
-    localStorage.removeItem("trip-qa-now");view.forced=false;syncFromTime();openQa();
+    localStorage.removeItem("trip-qa-now");
+    state.forced=false;sync();openQa();
   });
-}
-
-function handleIncomingMoment(){
-  const params = new URLSearchParams(location.search);
-  const key = params.get("surprise");
-  const match = key?.match(/^day-(\d+)-(\d+)$/);
-  if(!match) return false;
-  const day = Number(match[1]);
-  const index = Number(match[2]);
-  if(CONTENT.days[day]?.[index]){
-    view={day,index,forced:true};
-    params.delete("surprise");
-    const rest=params.toString();
-    try{history.replaceState(null,"",location.pathname+(rest?"?"+rest:""));}catch(_){}
-    return true;
-  }
-  return false;
-}
-
-function syncFromTime(){
-  const date = now();
-  updateRouteUI(date);
-  updateBefore(date);
-  if(beforeTrip(date)) return;
-
-  const day = dayNumber(date) || 17;
-  const last = currentOrLatestIndex(day,date);
-  if(!view.forced || view.day !== day){
-    view={day,index:last,forced:false};
-  }
-  renderDay();
-}
-
-function setupSwipe(){
-  const card = $("momentCard");
-  card.addEventListener("touchstart",e=>{
-    const t=e.changedTouches[0];touchStartX=t.clientX;touchStartY=t.clientY;
-  },{passive:true});
-  card.addEventListener("touchend",e=>{
-    const t=e.changedTouches[0];
-    const dx=t.clientX-touchStartX,dy=t.clientY-touchStartY;
-    if(Math.abs(dx)<55 || Math.abs(dx)<Math.abs(dy)*1.3) return;
-    const unlocked=unlockedIndex(view.day);
-    if(dx<0 && (isQa() || view.index<unlocked) && view.index<7) setView(view.day,view.index+1);
-    if(dx>0 && view.index>0) setView(view.day,view.index-1);
-  },{passive:true});
 }
 
 function setup(){
-  $("sheetClose").addEventListener("click",closeSheet);
-  $("sheet").addEventListener("click",e=>{if(e.target===$("sheet")) closeSheet();});
-  window.addEventListener("popstate",()=>{if($("sheet").open) $("sheet").close();});
-
-  $("archiveButton").addEventListener("click",openArchive);
-  $("routeButton").addEventListener("click",openRoute);
-  $("routeChip").addEventListener("click",openRoute);
-  $("prevMoment").addEventListener("click",()=>setView(view.day,view.index-1));
-  $("nextMoment").addEventListener("click",()=>setView(view.day,view.index+1));
-
-  setupHold($("globalHugButton"),$("dockHeart"));
+  setupHold($("globalHugButton"),$("heartProgress"));
   setupSwipe();
   setupQa();
 
-  const incoming=handleIncomingMoment();
-  if(incoming){
-    updateBefore(now());
-    updateRouteUI(now());
-    renderDay();
-  }else{
-    syncFromTime();
-  }
+  if(!handleIncoming()) sync();
 
   setInterval(()=>{
-    if(!view.forced) syncFromTime();
-    else updateRouteUI(now());
-    if(beforeTrip()) updateBefore();
+    if(!state.forced) sync();
+    else renderJourney();
   },30000);
 
   if("serviceWorker" in navigator){
