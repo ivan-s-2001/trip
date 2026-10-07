@@ -122,6 +122,14 @@ public final class NotificationScheduler {
         Random contentRandom = new Random(1701L + day * 7919L);
 
         for (int slot = 0; slot < BASE_MINUTES.length; slot++) {
+            // В дни перелётов часть обычных касаний заменяется дорожными уведомлениями,
+            // чтобы итог всё равно оставался 8 уведомлений в сутки.
+            if ((day == 10 && slot == 7) ||
+                    (day == 11 && slot == 1) ||
+                    (day == 17 && (slot == 0 || slot == 1))) {
+                continue;
+            }
+
             int jitter = timingRandom.nextInt(JITTER_MINUTES * 2 + 1) - JITTER_MINUTES;
             int minuteOfDay = BASE_MINUTES[slot] + jitter;
             int hour = minuteOfDay / 60;
@@ -189,6 +197,55 @@ public final class NotificationScheduler {
                 );
             }
         }
+
+        scheduleTravelForDay(context, day);
+    }
+
+    private static void scheduleTravelForDay(Context context, int day) {
+        if (day == 10) {
+            scheduleIfFuture(
+                    context,
+                    7010,
+                    atZoneTime(10, 22, 15, "Europe/Moscow"),
+                    CHANNEL_TRIP,
+                    "Скоро SU1502 ✈",
+                    "Шереметьево · терминал B · вылет в 23:00. Следующая точка — Тюмень.",
+                    "home",
+                    null
+            );
+        } else if (day == 11) {
+            scheduleIfFuture(
+                    context,
+                    7011,
+                    atZoneTime(11, 3, 55, "Asia/Yekaterinburg"),
+                    CHANNEL_TRIP,
+                    "Тюмень ✓",
+                    "Самолётный этап позади. Дальше — дорога из Тюмени в Барнаул.",
+                    "home",
+                    null
+            );
+        } else if (day == 17) {
+            scheduleIfFuture(
+                    context,
+                    7017,
+                    atZoneTime(17, 4, 10, "Asia/Yekaterinburg"),
+                    CHANNEL_TRIP,
+                    "Скоро SU1503 ✈",
+                    "Тюмень → Москва · вылет 04:45. Ещё один большой кусок дороги домой.",
+                    "home",
+                    null
+            );
+            scheduleIfFuture(
+                    context,
+                    7018,
+                    atZoneTime(17, 5, 40, "Europe/Moscow"),
+                    CHANNEL_TRIP,
+                    "Москва ✓",
+                    "Шереметьево позади. Но домой — это ещё дальше: впереди дорога до Рыбинска.",
+                    "home",
+                    null
+            );
+        }
     }
 
     private static void scheduleIfFuture(
@@ -207,6 +264,13 @@ public final class NotificationScheduler {
 
     private static long atLocalTime(int day, int hour, int minute) {
         Calendar calendar = Calendar.getInstance(TimeZone.getDefault());
+        calendar.clear();
+        calendar.set(2026, Calendar.OCTOBER, day, hour, minute, 0);
+        return calendar.getTimeInMillis();
+    }
+
+    private static long atZoneTime(int day, int hour, int minute, String zoneId) {
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone(zoneId));
         calendar.clear();
         calendar.set(2026, Calendar.OCTOBER, day, hour, minute, 0);
         return calendar.getTimeInMillis();
