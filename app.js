@@ -4,6 +4,35 @@ const CONFIG = {
   tripEnd: new Date(2026, 9, 18, 0, 0, 0),
 };
 
+const TRIP = {
+  outboundFlight: {
+    flight:"SU 1502", carrier:"Аэрофлот", aircraft:"Airbus A320",
+    from:"Москва · SVO Шереметьево", to:"Тюмень · TJM Рощино",
+    terminal:"B", departure:"2026-10-10T23:00:00+03:00", arrival:"2026-10-11T03:45:00+05:00",
+    duration:"2 ч 45 мин"
+  },
+  returnFlight: {
+    flight:"SU 1503", carrier:"Аэрофлот", aircraft:"Airbus A320",
+    from:"Тюмень · TJM Рощино", to:"Москва · SVO Шереметьево",
+    terminal:"B по прилёту", departure:"2026-10-17T04:45:00+05:00", arrival:"2026-10-17T05:35:00+03:00",
+    duration:"2 ч 50 мин"
+  }
+};
+
+const TRIP_LEGS = {
+  outbound:[
+    {icon:"⌂", title:"Рыбинск → Москва", meta:"Транспорт и время выезда ещё добавить", unknown:true},
+    {icon:"→", title:"Москва → Шереметьево", meta:"Терминал B · время трансфера ещё добавить", unknown:true},
+    {icon:"✈", title:"SU 1502 · Москва → Тюмень", meta:"10 окт · 23:00 → 11 окт · 03:45 · Airbus A320"},
+    {icon:"→", title:"Тюмень → Барнаул", meta:"Транспорт и время ещё добавить", unknown:true}
+  ],
+  back:[
+    {icon:"→", title:"Барнаул → Тюмень", meta:"Транспорт и время ещё добавить", unknown:true},
+    {icon:"✈", title:"SU 1503 · Тюмень → Москва", meta:"17 окт · 04:45 → 05:35 · Airbus A320"},
+    {icon:"⌂", title:"Москва → Рыбинск", meta:"После Шереметьево · транспорт и время ещё добавить", unknown:true}
+  ]
+};
+
 const NOTES = [
   "Я уже скучаю, хотя ты ещё даже не уехала.",
   "Напоминаю: дома тебя очень сильно любят. Особенно один конкретный муж.",
@@ -139,7 +168,14 @@ const RANDOM_MEMORIES = [
 
 const $ = (id) => document.getElementById(id);
 const pad = (n) => String(Math.max(0, Math.floor(n))).padStart(2, "0");
-const now = () => new Date();
+const isQa = () => new URLSearchParams(location.search).get("qa") === "1";
+const now = () => {
+  if (isQa()) {
+    const stored = Number(localStorage.getItem("trip-qa-now"));
+    if (Number.isFinite(stored) && stored > 0) return new Date(stored);
+  }
+  return new Date();
+};
 
 function stateFor(date = now()) {
   if (date < CONFIG.departure) return "before";
@@ -203,7 +239,68 @@ function updateCountdown() {
   }
   if (title !== document.title) document.documentElement.dataset.state = state;
   updateProgress(current, state);
+  updateJourney(current);
   updateFinale(state);
+}
+
+
+function journeyStatus(date = now()) {
+  const t = date.getTime();
+  const outDep = new Date(TRIP.outboundFlight.departure).getTime();
+  const outArr = new Date(TRIP.outboundFlight.arrival).getTime();
+  const backDep = new Date(TRIP.returnFlight.departure).getTime();
+  const backArr = new Date(TRIP.returnFlight.arrival).getTime();
+  const oct10 = new Date("2026-10-10T00:00:00+03:00").getTime();
+  const oct12 = new Date("2026-10-12T00:00:00+07:00").getTime();
+  const oct16 = new Date("2026-10-16T00:00:00+07:00").getTime();
+
+  if (t < oct10) return {kicker:"маршрут поездки", title:"Рыбинск → Барнаул", meta:"через Москву и Тюмень", icon:"→"};
+  if (t < outDep) return {kicker:"сегодня в дорогу", title:"Рыбинск → Москва → SVO", meta:"SU1502 · терминал B · 23:00", icon:"→"};
+  if (t < outArr) return {kicker:"сейчас в пути", title:"Москва → Тюмень", meta:"SU1502 · прилёт 03:45", icon:"✈"};
+  if (t < oct12) return {kicker:"следующий участок", title:"Тюмень → Барнаул", meta:"транспорт и время ещё добавить", icon:"→"};
+  if (t < oct16) return {kicker:"командировка", title:"Барнаул", meta:"домой 17 октября", icon:"♥"};
+  if (t < backDep) return {kicker:"следующая дорога", title:"Барнаул → Тюмень → Москва", meta:"SU1503 · Тюмень 04:45", icon:"→"};
+  if (t < backArr) return {kicker:"сейчас в пути", title:"Тюмень → Москва", meta:"SU1503 · SVO 05:35", icon:"✈"};
+  if (t < CONFIG.tripEnd.getTime()) return {kicker:"последний участок", title:"Москва → Рыбинск", meta:"после прилёта в SVO · время добавить", icon:"⌂"};
+  return {kicker:"маршрут завершён", title:"Рыбинск ♥", meta:"дома", icon:"♥"};
+}
+
+function updateJourney(date = now()) {
+  const status = journeyStatus(date);
+  const button = $("journeyButton");
+  if (!button) return;
+  $("journeyKicker").textContent = status.kicker;
+  $("journeyTitle").textContent = status.title;
+  $("journeyMeta").textContent = status.meta;
+  button.querySelector(".journey-icon").textContent = status.icon;
+}
+
+function routeLegHtml(leg) {
+  return `<article class="trip-leg ${leg.unknown ? "trip-unknown" : ""}">
+    <span class="trip-leg-icon">${leg.icon}</span>
+    <span class="trip-leg-copy">
+      <strong>${leg.title}</strong>
+      <span>${leg.meta}</span>
+      ${leg.unknown ? "<small>нужно дополнить</small>" : ""}
+    </span>
+  </article>`;
+}
+
+function openJourney() {
+  openModal(`
+    <div class="trip-sheet">
+      <p class="eyebrow">вся дорога · 10—17 октября</p>
+      <h3>Рыбинск → Барнаул → Рыбинск</h3>
+      <section class="trip-direction">
+        <h4>Туда</h4>
+        ${TRIP_LEGS.outbound.map(routeLegHtml).join("")}
+      </section>
+      <section class="trip-direction">
+        <h4>Обратно</h4>
+        ${TRIP_LEGS.back.map(routeLegHtml).join("")}
+      </section>
+      <p>Авиабилеты уже зафиксированы. Для участков Рыбинск ↔ Москва и Тюмень ↔ Барнаул оставлены честные пустые места — добавим транспорт и время, когда они будут известны.</p>
+    </div>`);
 }
 
 function updateProgress(current, state) {
@@ -366,6 +463,7 @@ function init() {
   registerVisit(); pickNote(); updateCountdown(); setupHugs(); bindCards(); setupPhotos(); setupInstall(); setupServiceWorker();
   $("anotherNote").addEventListener("click", () => { pickNote(); showToast("Новая записка ♥"); });
   $("randomMemoryButton").addEventListener("click", () => { $("randomMemory").textContent = RANDOM_MEMORIES[Math.floor(Math.random()*RANDOM_MEMORIES.length)]; });
+  $("journeyButton")?.addEventListener("click", openJourney);
   $("modalClose").addEventListener("click", closeModal);
   $("contentModal").addEventListener("click", e => { if (e.target === $("contentModal")) closeModal(); });
   window.addEventListener("popstate", () => { if ($("contentModal").open) $("contentModal").close(); });
@@ -712,6 +810,113 @@ function setupNativeMode(){
   document.documentElement.classList.add("is-native");
   document.querySelector(".android-card")?.remove();
   if($("installButton")) $("installButton").hidden = true;
+}
+
+function setQaNow(ms) {
+  localStorage.setItem("trip-qa-now", String(ms));
+  updateCountdown();
+  renderDays();
+  renderLetters();
+  pickNote();
+  openDailySurpriseOnce();
+}
+
+function qaDayMoment(day) {
+  if (day === 10) return new Date("2026-10-10T14:00:00+03:00").getTime();
+  if (day === 17) return new Date("2026-10-17T06:15:00+03:00").getTime();
+  return new Date(`2026-10-${String(day).padStart(2,"0")}T14:00:00+07:00`).getTime();
+}
+
+function qaPush(key) {
+  if (window.TripQA && typeof window.TripQA.notify === "function") {
+    window.TripQA.notify(key);
+    showToast("Тестовый push отправлен");
+  } else {
+    showToast("Push доступен только в Trip QA APK");
+  }
+}
+
+function openQaPanel() {
+  const date = now();
+  const day = currentTripDay(date) || (date.getDate() >= 10 && date.getDate() <= 17 ? date.getDate() : 10);
+  const pool = SURPRISE_BY_DAY[day] || [];
+  const nativeBridge = !!(window.TripQA && typeof window.TripQA.notify === "function");
+
+  openModal(`
+    <div class="qa-panel">
+      <span class="qa-badge">QA ONLY</span>
+      <h3>Тест поездки</h3>
+      <div class="qa-status">
+        Сейчас симулируется: <strong>${date.toLocaleString("ru-RU")}</strong><br>
+        Android push: <strong>${nativeBridge ? "доступен" : "только просмотр"}</strong>
+      </div>
+
+      <section class="qa-section">
+        <strong>День</strong>
+        <div class="qa-grid">
+          ${[10,11,12,13,14,15,16,17].map(d => `<button type="button" data-qa-day="${d}" class="${d===day ? "is-active" : ""}">${d}.10</button>`).join("")}
+        </div>
+      </section>
+
+      <section class="qa-section">
+        <strong>Дорожные состояния</strong>
+        <div class="qa-actions">
+          <button type="button" data-qa-iso="2026-10-10T23:30:00+03:00">SU1502 · полёт</button>
+          <button type="button" data-qa-iso="2026-10-11T03:50:00+05:00">Тюмень · прилёт</button>
+          <button type="button" data-qa-iso="2026-10-16T18:00:00+07:00">16.10 · годовщина</button>
+          <button type="button" data-qa-iso="2026-10-17T05:00:00+05:00">SU1503 · полёт</button>
+        </div>
+      </section>
+
+      <section class="qa-section">
+        <strong>Контент ${day} октября</strong>
+        <div class="qa-actions">
+          ${pool.map((item,i) => `<button type="button" data-qa-open="day-${day}-${i}">${i+1}. ${item.title}</button>`).join("") || "<span>Нет дневного пула</span>"}
+        </div>
+      </section>
+
+      <section class="qa-section">
+        <strong>Уведомления</strong>
+        <div class="qa-actions">
+          <button type="button" data-qa-push="day-${day}-0">Push · дневной</button>
+          <button type="button" data-qa-push="random-0">Push · случайный</button>
+        </div>
+      </section>
+
+      <div class="qa-actions">
+        <button type="button" id="qaJourney">Маршрут целиком</button>
+        <button type="button" id="qaRealTime">Вернуть реальное время</button>
+      </div>
+    </div>`);
+
+  const modal = $("contentModal");
+  modal.querySelectorAll("[data-qa-day]").forEach(button => button.addEventListener("click", () => {
+    setQaNow(qaDayMoment(Number(button.dataset.qaDay)));
+    openQaPanel();
+  }));
+  modal.querySelectorAll("[data-qa-iso]").forEach(button => button.addEventListener("click", () => {
+    setQaNow(new Date(button.dataset.qaIso).getTime());
+    openQaPanel();
+  }));
+  modal.querySelectorAll("[data-qa-open]").forEach(button => button.addEventListener("click", () => {
+    openSurprise(button.dataset.qaOpen);
+  }));
+  modal.querySelectorAll("[data-qa-push]").forEach(button => button.addEventListener("click", () => qaPush(button.dataset.qaPush)));
+  modal.querySelector("#qaJourney")?.addEventListener("click", openJourney);
+  modal.querySelector("#qaRealTime")?.addEventListener("click", () => {
+    localStorage.removeItem("trip-qa-now");
+    updateCountdown(); renderDays(); renderLetters(); pickNote(); openQaPanel();
+  });
+}
+
+function setupQaMode() {
+  if (!isQa()) return;
+  document.documentElement.classList.add("is-qa");
+  const button = $("qaButton");
+  if (button) {
+    button.hidden = false;
+    button.addEventListener("click", openQaPanel);
+  }
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
