@@ -921,5 +921,6 @@ function setupQaMode() {
 
 document.addEventListener("DOMContentLoaded",()=>{
   setupNativeMode();
+  setupQaMode();
   setupVoiceNotes();
 });
