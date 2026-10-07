@@ -1,4 +1,4 @@
-const CACHE = "trip-v9";
+const CACHE = "trip-v10";
 const CORE = ["./", "./index.html", "./styles.css", "./content.js", "./app.js", "./manifest.webmanifest", "./assets/icons/icon.svg"];
 
 self.addEventListener("install", event => {
