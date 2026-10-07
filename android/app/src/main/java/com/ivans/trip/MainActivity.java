@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -49,6 +50,10 @@ public class MainActivity extends Activity {
             settings.setSafeBrowsingEnabled(true);
         }
 
+        if ("qa".equals(BuildConfig.BUILD_TYPE)) {
+            webView.addJavascriptInterface(new QaBridge(), "TripQA");
+        }
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -87,6 +92,9 @@ public class MainActivity extends Activity {
     private String urlFor(String screen, String surprise) {
         StringBuilder url = new StringBuilder(SITE_URL);
         url.append("?native=1");
+        if ("qa".equals(BuildConfig.BUILD_TYPE)) {
+            url.append("&qa=1");
+        }
         if (surprise != null && !surprise.isEmpty()) {
             url.append("&surprise=").append(Uri.encode(surprise));
         }
@@ -94,6 +102,20 @@ public class MainActivity extends Activity {
             url.append("#").append(screen);
         }
         return url.toString();
+    }
+
+    private final class QaBridge {
+        @JavascriptInterface
+        public void notify(String surprise) {
+            Intent test = new Intent(MainActivity.this, NotificationReceiver.class);
+            test.putExtra("notification_id", 9900 + Math.abs((surprise == null ? "qa" : surprise).hashCode() % 500));
+            test.putExtra("channel", NotificationScheduler.CHANNEL_TRIP);
+            test.putExtra("title", "QA · тест уведомления");
+            test.putExtra("text", "Нажми — проверим deep link и сюрприз.");
+            test.putExtra("screen", "home");
+            test.putExtra("surprise", surprise == null || surprise.isEmpty() ? "random-0" : surprise);
+            sendBroadcast(test);
+        }
     }
 
     private void requestNotificationsIfNeeded() {
