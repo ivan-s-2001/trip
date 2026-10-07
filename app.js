@@ -451,6 +451,19 @@ function sync(){
     return;
   }
 
+  // Во время реального перелёта рейс становится центральным состоянием всего экрана,
+  // даже если полёт пересёк полночь или телефон ещё не сменил часовой пояс.
+  if(between(date,TIMES.su1502Dep,TIMES.su1502Arr)){
+    state={day:10,index:7,forced:true};
+    renderMoment();
+    return;
+  }
+  if(between(date,TIMES.su1503Dep,TIMES.su1503Arr)){
+    state={day:17,index:0,forced:true};
+    renderMoment();
+    return;
+  }
+
   const day=dayNumber(date)||17;
   if(state.forced && state.day===day){
     renderMoment();
