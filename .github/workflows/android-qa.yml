@@ -33,6 +33,11 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Check web syntax
+        run: |
+          node --check app.js
+          node --check content.js
+
       - name: Build QA APK
         run: gradle -p android :app:assembleQa --stacktrace
 
