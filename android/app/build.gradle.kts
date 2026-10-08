@@ -44,3 +44,25 @@ android {
 dependencies {
     implementation("com.google.android.gms:play-services-location:21.4.0")
 }
+
+val webSourceDir = rootProject.projectDir.parentFile
+val generatedOfflineAssets = layout.buildDirectory.dir("generated/offlineAssets")
+
+val syncWebAssets by tasks.registering(Copy::class) {
+    from(webSourceDir) {
+        include("index.html")
+        include("styles.css")
+        include("app.js")
+        include("content.js")
+        include("manifest.webmanifest")
+        include("sw.js")
+        include("assets/**")
+    }
+    into(generatedOfflineAssets.map { it.dir("www") })
+}
+
+android.sourceSets.getByName("main").assets.srcDir(generatedOfflineAssets)
+
+tasks.named("preBuild").configure {
+    dependsOn(syncWebAssets)
+}
