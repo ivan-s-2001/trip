@@ -19,6 +19,7 @@
         <span id="sceneDate">10—17 октября</span>
         <strong id="sceneStatus">Рыбинск → Курган</strong>
       </div>
+      <button class="connect-button" id="connectButton" type="button" aria-label="Подключить приложение"><span class="bi-icon bi-house-heart-fill" aria-hidden="true"></span></button>
       <button class="heart" id="quickHug" type="button" aria-label="Обнять"><span class="bi-icon bi-heart-fill" aria-hidden="true"></span></button>
       <button class="qa-button" id="qaButton" type="button" hidden>QA</button>
     </header>
@@ -36,6 +37,7 @@
       </div>
 
       <div class="action" id="action"></div>
+      <button class="new-moment" id="newMoment" type="button" hidden>Для тебя новая записка <span class="bi-icon bi-arrow-right" aria-hidden="true"></span></button>
       <nav class="moment-nav" id="momentNav" aria-label="Открытые записки" hidden>
         <button id="prevMoment" type="button" aria-label="Предыдущая записка"><span class="bi-icon bi-arrow-right back-arrow" aria-hidden="true"></span></button>
         <span id="momentPosition"></span>
@@ -63,8 +65,13 @@
     <div class="qa-content" id="qaContent"></div>
   </dialog>
 
+  <dialog class="photo-viewer" id="photoViewer"><button id="closePhoto" type="button" aria-label="Закрыть фотографию"><span class="bi-icon bi-x-lg" aria-hidden="true"></span></button><img id="fullPhoto" alt="" /></dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <dialog id="connectSheet" class="connect-sheet"><button id="connectClose" type="button" aria-label="Закрыть">×</button><h2>Наше место</h2><form id="connectForm"><label for="accessCode">Код доступа</label><input id="accessCode" autocomplete="off" type="password" required /><button class="primary" type="submit">Подключить</button><p id="connectError" role="status"></p></form></dialog>
+  <main id="husbandDashboard" class="husband-dashboard" hidden><header><div><p>НАШЕ МЕСТО</p><h1>Её поездка</h1><small id="dashboardStatus"></small></div><button id="dashboardRefresh" type="button">Обновить</button><button id="dashboardLogout" type="button">Выйти</button></header><p id="dashboardEmpty">Здесь появятся её первые отметки.</p><h2>Сейчас</h2><section id="dashboardState"></section><h2>Последние действия</h2><section id="dashboardEvents"></section></main>
+  <script src="./sync.js" defer></script>
   <script src="./content.js"></script>
   <script src="./app.js" defer></script>
 </body>

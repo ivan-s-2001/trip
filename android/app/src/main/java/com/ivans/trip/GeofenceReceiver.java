@@ -36,9 +36,11 @@ public class GeofenceReceiver extends BroadcastReceiver {
 
             if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
                 prefs.edit().putString(GeofenceManager.KEY_ZONE, zone).apply();
+                if(!zone.equals(previous)) TripCloud.record(context, "trip-zone", zone);
 
                 if ("rybinsk".equals(zone) && isReturnWindow()) {
                     prefs.edit().putBoolean(GeofenceManager.KEY_HOME, true).apply();
+                    TripCloud.record(context, "trip-home-arrived", "1");
                 }
 
                 if (!zone.equals(previous)) {
@@ -47,10 +49,12 @@ public class GeofenceReceiver extends BroadcastReceiver {
             } else {
                 if (zone.equals(previous)) {
                     prefs.edit().putString(GeofenceManager.KEY_ZONE, "between").apply();
+                    TripCloud.record(context, "trip-zone", "between");
                 }
                 if(zone.equals(previous)) notifyTransition(context, zone, false);
             }
         }
+        TripCloud.flush(context, goAsync());
     }
 
     private void notifyTransition(Context context, String zone, boolean entered) {

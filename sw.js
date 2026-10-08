@@ -1,4 +1,4 @@
-const CACHE = "trip-v15";
+const CACHE = "trip-v17";
 
 const CORE = [
   "./",
@@ -6,6 +6,7 @@ const CORE = [
   "./styles.css",
   "./content.js",
   "./app.js",
+  "./sync.js",
   "./manifest.webmanifest",
   "./assets/icons/icon.svg",
   "./assets/icons/bootstrap/heart-fill.svg",
@@ -69,7 +70,7 @@ self.addEventListener("fetch", event => {
   if (url.origin !== self.location.origin) return;
 
   const isNavigation = event.request.mode === "navigate";
-  const isAppShell = /\/(index\.html|styles\.css|content\.js|app\.js|manifest\.webmanifest)$/.test(url.pathname);
+  const isAppShell = /\/(index\.html|styles\.css|content\.js|sync\.js|app\.js|manifest\.webmanifest)$/.test(url.pathname);
 
   if (isNavigation || isAppShell) {
     event.respondWith(

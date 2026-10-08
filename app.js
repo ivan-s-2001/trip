@@ -1,5 +1,6 @@
 const CONTENT = window.TRIP_CONTENT;
 const $ = (id) => document.getElementById(id);
+function saveShared(key,value){if(window.TripSync) window.TripSync.save(key,value);else localStorage.setItem(key,value);}
 
 const T = {
   tripStart: new Date("2026-10-10T00:00:00+03:00"),
@@ -33,6 +34,11 @@ const TYPE_LABELS = {
 };
 
 let view = {day:null,index:0,forced:false};
+let renderedMoment="";
+let rememberedMode="day";
+let holdingNow=false;
+const reducedMotion=()=>window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 let swipeX = 0;
 let swipeY = 0;
 let foregroundZone = "";
@@ -172,9 +178,10 @@ function unlocked(day,date=now()){
 
 function phase(date=now()){
   const zone=activeZone();
+  if(zone && localStorage.getItem("trip-zone")!==zone) saveShared("trip-zone",zone);
 
   if(nativeHome()){
-    localStorage.setItem("trip-home-arrived","1");
+    if(localStorage.getItem("trip-home-arrived")!=="1") saveShared("trip-home-arrived","1");
   }
 
   if(date<T.tripStart){
@@ -322,7 +329,7 @@ function toast(text){
 
 function hug(){
   const count=Number(localStorage.getItem("trip-hugs")||0)+1;
-  localStorage.setItem("trip-hugs",String(count));
+  saveShared("trip-hugs",String(count));
   navigator.vibrate?.([18,24,34]);
   $("quickHug").animate?.(
     [{transform:"scale(1)"},{transform:"scale(1.18)"},{transform:"scale(1)"}],
@@ -334,6 +341,7 @@ function hug(){
 function renderPhase(date=now()){
   const p=phase(date);
   $("scene").dataset.mode=p.mode;
+  $("scene").dataset.night=String(tripClock(date).minutes>=22*60 || tripClock(date).minutes<7*60);
   const progress=Math.max(0,Math.min(1,(date-T.tripStart)/(T.backArr-T.tripStart)));
   $("journeyProgress").style.width=`${Math.round(progress*100)}%`;
   $("sceneDate").textContent=p.date;
@@ -347,6 +355,7 @@ function renderPhase(date=now()){
 
 function renderBefore(){
   $("momentNav").hidden=true;
+  $("newMoment").hidden=true;
   $("scene").dataset.mode="before";
   $("media").hidden=true;
   $("media").innerHTML="";
@@ -397,6 +406,7 @@ function renderFlight(p,date=now()){
   $("text").textContent="";
   $("qaPrompt").hidden=true;
   $("momentNav").hidden=true;
+  $("newMoment").hidden=true;
   $("action").innerHTML=flightMarkup(p.flight,date);
 }
 
@@ -407,16 +417,26 @@ function setMoment(day,index,{forced=false}={}){
   renderMoment();
 }
 
+function rememberMoment(){
+  if(!qa() && view.day) saveShared("trip-last-moment",JSON.stringify({day:view.day,index:view.index}));
+}
+
 function renderMoment(){
   const item=CONTENT.days[view.day]?.[view.index];
   if(!item) return;
 
+  const key=`${view.day}-${view.index}`;
+  if(renderedMoment===key){$("scene").dataset.mode=rememberedMode;renderNavigation();renderNextMoment(view.day,view.index);return;}
+  renderedMoment=key;
+  rememberMoment();
+  if(!reducedMotion()) $("sceneMain").animate?.([{opacity:.35,transform:"translateY(8px)"},{opacity:1,transform:"translateY(0)"}],{duration:320,easing:"ease-out"});
   const last=unlocked(view.day);
   const locked=!view.forced && view.index>last;
   const mode=item.type==="photo"?"photo":
              item.type==="hug"?"hug":
              item.type==="anniversary"||view.day===16?"anniversary":
              item.type==="route"?"road":"day";
+  rememberedMode=mode;
   $("scene").dataset.mode=mode;
 
   $("kicker").textContent=locked?"позже":(TYPE_LABELS[item.type]||"для тебя");
@@ -434,6 +454,14 @@ function renderMoment(){
   renderAction(item,locked);
   renderNextMoment(view.day,view.index);
   renderNavigation();
+  const image=$("media").querySelector("img");
+  if(image){image.tabIndex=0;image.setAttribute("role","button");image.setAttribute("aria-label","Рассмотреть фотографию");image.addEventListener("click",()=>openPhoto(image));image.addEventListener("keydown",e=>{if(e.key==="Enter") openPhoto(image);});}
+}
+
+function openPhoto(image){
+  if(!image.complete || !image.naturalWidth) return;
+  $("fullPhoto").src=image.src;$("fullPhoto").alt=image.alt;
+  $("photoViewer").showModal();
 }
 
 function renderMedia(item,locked){
@@ -462,9 +490,37 @@ function renderAction(item,locked){
     return;
   }
 
+  if(item.type==="care"){
+    const options=view.day===10?["Вода с собой","Телефон заряжен","Документы рядом"]:["Попить воды","Дать плечам отдохнуть","Минуту ничего не делать"];
+    const key=`trip-care-${view.day}-${view.index}`;
+    let checked=[];try{checked=JSON.parse(localStorage.getItem(key))||[];}catch(_){}
+    mount.innerHTML=`<div class="care-list">${options.map((label,i)=>`<button type="button" aria-pressed="${checked.includes(i)}" data-care="${i}"><span class="bi-icon bi-check-circle-fill" aria-hidden="true"></span>${label}</button>`).join("")}</div>`;
+    mount.querySelectorAll("[data-care]").forEach(button=>button.addEventListener("click",()=>{
+      const i=Number(button.dataset.care);checked=checked.includes(i)?checked.filter(x=>x!==i):[...checked,i];
+      saveShared(key,JSON.stringify(checked));button.setAttribute("aria-pressed",String(checked.includes(i)));
+    }));return;
+  }
+  if(item.type==="photo-task" || (item.type==="memory" && view.day===17)){
+    const key=`trip-keepsake-${view.day}-${view.index}`;
+    mount.innerHTML=`<div class="keepsake"><label for="keepsakeInput">Одна деталь, которую хочется запомнить</label><textarea id="keepsakeInput" rows="2" maxlength="280" placeholder="Можно оставить здесь…"></textarea></div>`;
+    const input=$("keepsakeInput");input.value=localStorage.getItem(key)||"";
+    input.addEventListener("input",()=>saveShared(key,input.value));return;
+  }
+  if(item.type==="gift"){
+    const key="trip-evening-coupon";
+    mount.innerHTML=`<button class="coupon" id="coupon" type="button"><span class="bi-icon bi-house-heart-fill" aria-hidden="true"></span><strong>Один вечер для нас</strong><span>Без спешки · выберем вместе</span><small>${localStorage.getItem(key)?"Сохранён":"Нажми, чтобы сохранить"}</small></button>`;
+    $("coupon").addEventListener("click",()=>{saveShared(key,"1");$("coupon").querySelector("small").textContent="Сохранён";});return;
+  }
   if(item.type==="voice"){
     mount.innerHTML=`<div class="voice-box"><audio controls preload="metadata" src="./assets/audio/${item.media}"></audio></div>`;
-    mount.querySelector("audio").addEventListener("error",()=>{mount.innerHTML="";},{once:true});
+    const audio=mount.querySelector("audio");
+    const audioKey=`trip-audio-${item.media}`;
+    audio.addEventListener("loadedmetadata",()=>{const position=Number(localStorage.getItem(audioKey));if(position>0 && position<audio.duration) audio.currentTime=position;});
+    let lastSaved=0;
+    audio.addEventListener("timeupdate",()=>{const t=audio.currentTime;localStorage.setItem(audioKey,String(t));if(Math.abs(t-lastSaved)>=10){lastSaved=t;window.TripSync?.record(audioKey,String(t));}});
+    audio.addEventListener("pause",()=>window.TripSync?.record(audioKey,String(audio.currentTime)));
+    audio.addEventListener("ended",()=>localStorage.removeItem(audioKey));
+    audio.addEventListener("error",()=>{mount.innerHTML="";},{once:true});
     return;
   }
 
@@ -475,9 +531,10 @@ function renderAction(item,locked){
       `<button type="button" data-choice="${choice}" class="${selected===choice?"is-selected":""}">${choice}</button>`
     ).join("")}</div>`;
     mount.querySelectorAll("[data-choice]").forEach(btn=>btn.addEventListener("click",()=>{
-      localStorage.setItem(key,btn.dataset.choice);
+      saveShared(key,btn.dataset.choice);
       renderAction(item,false);
-      toast("Твой выбор сохранён на этом устройстве");
+      const responses={"поддержка":"Не нужно справляться идеально. Я на твоей стороне.","немного дома":"Мы с котами здесь. Твоё место ждёт тебя.","тишина":"Хорошо. Можно просто побыть здесь.","еда и кино":"План сохранён: спокойный вечер с едой и кино.","разговаривать":"План сохранён: вечер для наших разговоров.","лежать рядом":"План сохранён: просто быть рядом.","есть":"Сначала поесть. Остальное подождёт.","обниматься":"Сначала обниматься. Очень понятный план.","ничего не делать":"Ничего не делать вместе — тоже план."};
+      toast(responses[btn.dataset.choice]||"Сохранено ♥");
     }));
     return;
   }
@@ -503,7 +560,7 @@ function renderAction(item,locked){
   if(item.type==="home" && localStorage.getItem("trip-home-arrived")!=="1"){
     mount.innerHTML=`<button class="primary" id="homeBtn" type="button">я уже дома</button>`;
     $("homeBtn").addEventListener("click",()=>{
-      localStorage.setItem("trip-home-arrived","1");
+      saveShared("trip-home-arrived","1");
       view={day:17,index:7,forced:true};
       renderPhase();
       renderMoment();
@@ -547,28 +604,27 @@ function sync(){
 
   if(p.mode==="before"){
     view={day:null,index:0,forced:false};
-    renderBefore();
+    renderedMoment="";renderBefore();
     return;
   }
 
   if(p.mode==="flight"){
     view={day:null,index:0,forced:false};
-    renderFlight(p,date);
+    renderedMoment="";renderFlight(p,date);
     return;
   }
 
   const day=dayNumber(date)||17;
-  if(view.forced && view.day===day){
-    renderMoment();
-    return;
-  }
-
   if(p.mode==="home"){
-    view={day:17,index:7,forced:false};
-    renderMoment();
-    return;
+    view={day:17,index:7,forced:false};renderMoment();return;
   }
-  const idx=Math.max(0,unlocked(day,date));
+  if(view.day===day && (view.forced || renderedMoment)){
+    renderMoment();return;
+  }
+  let idx=Math.max(0,unlocked(day,date));
+  if(!qa()){
+    try{const saved=JSON.parse(localStorage.getItem("trip-last-moment"));if(saved?.day===day && Number.isInteger(saved.index) && saved.index>=0 && saved.index<=idx) idx=saved.index;}catch(_){}
+  }
   view={day,index:idx,forced:false};
   renderMoment();
 }
@@ -585,15 +641,16 @@ function move(delta){
 function setupHold(button){
   let frame=0,start=0,holding=false;
   const ring=button.querySelector(".hold-ring");
-  function cancel(){holding=false;cancelAnimationFrame(frame);ring.style.setProperty("--hold",0);}
+  function cancel(){holding=false;holdingNow=false;cancelAnimationFrame(frame);ring.style.setProperty("--hold",0);$("scene").style.setProperty("--embrace",0);button.classList.remove("is-holding");}
   function tick(time){
     if(!holding) return;
     const progress=Math.min(1,(time-start)/2000);
     ring.style.setProperty("--hold",progress);
+    $("scene").style.setProperty("--embrace",progress);
     if(progress===1){cancel();hug();button.querySelector("small").textContent="Я рядом. Можно обнять ещё раз";}
     else frame=requestAnimationFrame(tick);
   }
-  function begin(){if(holding) return;holding=true;start=performance.now();frame=requestAnimationFrame(tick);}
+  function begin(){if(holding) return;holding=true;holdingNow=true;button.classList.add("is-holding");start=performance.now();frame=requestAnimationFrame(tick);}
   button.addEventListener("pointerdown",e=>{if(e.button!==0) return;button.setPointerCapture(e.pointerId);begin();});
   for(const event of ["pointerup","pointercancel","lostpointercapture","blur"]) button.addEventListener(event,cancel);
   button.addEventListener("keydown",e=>{if(e.code==="Space"||e.code==="Enter"){e.preventDefault();if(!e.repeat) begin();}});
@@ -605,17 +662,27 @@ function renderNavigation(){
   nav.hidden=!view.day;
   $("prevMoment").disabled=view.index===0;
   $("nextMoment").disabled=view.index>=unlocked(view.day);
+  $("newMoment").hidden=view.index>=unlocked(view.day);
   $("momentPosition").textContent=`${view.index+1} / ${CONTENT.days[view.day].length}`;
   $("homeConfirm").hidden=now()<T.backArr || localStorage.getItem("trip-home-arrived")==="1";
 }
 
 function setupSwipe(){
   $("sceneMain").addEventListener("touchstart",e=>{
-    if(e.target.closest("button,audio")){swipeX=null;return;}
+    if(e.target.closest("button,audio,textarea,input")){swipeX=null;return;}
     const t=e.changedTouches[0];
     swipeX=t.clientX;swipeY=t.clientY;
   },{passive:true});
+  $("sceneMain").addEventListener("touchmove",e=>{
+    if(swipeX===null || reducedMotion()) return;
+    const t=e.changedTouches[0],dx=t.clientX-swipeX,dy=t.clientY-swipeY;
+    if(Math.abs(dx)<Math.abs(dy)*1.25) return;
+    const canMove=dx>0?view.index>0:view.index<unlocked(view.day);
+    document.querySelector(".copy").style.transform=`translateX(${Math.max(-45,Math.min(45,dx*(canMove?.25:.08)))}px)`;
+  },{passive:true});
+  $("sceneMain").addEventListener("touchcancel",()=>{document.querySelector(".copy").style.transform="";swipeX=null;},{passive:true});
   $("sceneMain").addEventListener("touchend",e=>{
+    document.querySelector(".copy").style.transform="";
     const t=e.changedTouches[0];
     if(swipeX===null) return;
     const dx=t.clientX-swipeX,dy=t.clientY-swipeY;
@@ -700,7 +767,7 @@ function openQa(){
   });
   root.querySelector("#qaHome").addEventListener("click",()=>{
     if(localStorage.getItem("trip-home-arrived")==="1") localStorage.removeItem("trip-home-arrived");
-    else localStorage.setItem("trip-home-arrived","1");
+    else saveShared("trip-home-arrived","1");
     sync();openQa();
   });
   root.querySelector("#qaReal").addEventListener("click",()=>{
@@ -710,23 +777,30 @@ function openQa(){
 }
 
 function setup(){
-  $("quickHug").addEventListener("click",hug);
+  $("quickHug").addEventListener("click",()=>{
+    if(!reducedMotion()) $("sceneMain").animate?.([{opacity:1},{opacity:.7},{opacity:1}],{duration:650});
+    hug();
+  });
+  $("newMoment").addEventListener("click",()=>{if(view.day) setMoment(view.day,unlocked(view.day),{forced:true});});
+  $("closePhoto").addEventListener("click",()=>$("photoViewer").close());
+  $("photoViewer").addEventListener("click",e=>{if(e.target===$("photoViewer")) $("photoViewer").close();});
   setupSwipe();
   $("prevMoment").addEventListener("click",()=>move(-1));
   $("nextMoment").addEventListener("click",()=>move(1));
   $("homeConfirm").addEventListener("click",()=>{
-    localStorage.setItem("trip-home-arrived","1");
+    saveShared("trip-home-arrived","1");
     view={day:null,index:0,forced:false};sync();toast("Мы снова вместе ♥");
   });
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden){view.forced=false;sync();refreshForegroundLocation();}});
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden){sync();refreshForegroundLocation();}});
   setupQa();
 
   if(!handleIncoming()) sync();
   refreshForegroundLocation();
 
   setInterval(()=>{
+    if(holdingNow) return;
     if(!view.forced || view.day!==dayNumber()) sync();
-    else {renderPhase();if(view.day) renderNextMoment(view.day,view.index);}
+    else {renderPhase();if(view.day) renderMoment();}
   },30000);
 
   setInterval(refreshForegroundLocation,300000);

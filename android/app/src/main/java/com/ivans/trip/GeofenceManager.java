@@ -40,7 +40,10 @@ public final class GeofenceManager {
         return true;
     }
 
+    public static void unregister(Context context) { LocationServices.getGeofencingClient(context).removeGeofences(pendingIntent(context)); }
+
     public static void registerAll(Context context) {
+        if(TripCloud.isHusband(context)) return;
         if (!hasRequiredPermissions(context)) return;
 
         GeofencingClient client = LocationServices.getGeofencingClient(context);

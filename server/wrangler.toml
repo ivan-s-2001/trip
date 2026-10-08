@@ -1,0 +1,8 @@
+name = "trip-private"
+main = "../dist/worker.mjs"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "trip-private"
+database_id = "c94043d8-2051-4cf3-88d7-5d5c1b1c391f"

@@ -10,8 +10,8 @@ android {
         applicationId = "com.ivans.trip"
         minSdk = 24
         targetSdk = 35
-        versionCode = 12
-        versionName = "1.9.0"
+        versionCode = 14
+        versionName = "2.0.0"
     }
 
     buildTypes {
@@ -53,6 +53,7 @@ val syncWebAssets by tasks.registering(Copy::class) {
         include("index.html")
         include("styles.css")
         include("app.js")
+        include("sync.js")
         include("content.js")
         include("manifest.webmanifest")
         include("sw.js")

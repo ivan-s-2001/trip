@@ -14,6 +14,7 @@ import android.os.Build;
 public class NotificationReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
+        if(TripCloud.isHusband(context)) return;
         int id = intent.getIntExtra("notification_id", 2601);
         String channel = intent.getStringExtra("channel");
         String title = intent.getStringExtra("title");

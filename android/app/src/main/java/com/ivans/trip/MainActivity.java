@@ -35,9 +35,11 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
 
         NotificationScheduler.ensureChannels(this);
-        NotificationScheduler.scheduleAll(this);
-        requestNotificationsIfNeeded();
-        requestLocationIfNeeded();
+        if(!TripCloud.isHusband(this)) {
+            NotificationScheduler.scheduleAll(this);
+            requestNotificationsIfNeeded();
+            requestLocationIfNeeded();
+        }
 
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(247, 240, 232));
@@ -149,6 +151,12 @@ public class MainActivity extends Activity {
     }
 
     private final class NativeBridge {
+        @JavascriptInterface
+        public String getSyncAccess() { return TripCloud.getAccess(MainActivity.this); }
+
+        @JavascriptInterface
+        public void setSyncAccess(String token, String role) { TripCloud.setAccess(MainActivity.this, token, role); }
+
         @JavascriptInterface
         public String getZone() {
             return GeofenceManager.getLastZone(MainActivity.this);
