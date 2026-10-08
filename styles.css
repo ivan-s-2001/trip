@@ -464,3 +464,31 @@ button{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important}
 }
+
+/* Bootstrap Icons v1.13.1 — local/offline, official twbs/icons SVG masks. */
+.bi-icon{
+  display:inline-block;
+  width:1em;
+  height:1em;
+  flex:0 0 auto;
+  background-color:currentColor;
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+  -webkit-mask-position:center;
+  mask-position:center;
+  -webkit-mask-size:contain;
+  mask-size:contain;
+}
+.bi-heart-fill{-webkit-mask-image:url("./assets/icons/bootstrap/heart-fill.svg");mask-image:url("./assets/icons/bootstrap/heart-fill.svg")}
+.bi-airplane-fill{-webkit-mask-image:url("./assets/icons/bootstrap/airplane-fill.svg");mask-image:url("./assets/icons/bootstrap/airplane-fill.svg")}
+.bi-house-heart-fill{-webkit-mask-image:url("./assets/icons/bootstrap/house-heart-fill.svg");mask-image:url("./assets/icons/bootstrap/house-heart-fill.svg")}
+.bi-geo-alt-fill{-webkit-mask-image:url("./assets/icons/bootstrap/geo-alt-fill.svg");mask-image:url("./assets/icons/bootstrap/geo-alt-fill.svg")}
+.bi-camera-fill{-webkit-mask-image:url("./assets/icons/bootstrap/camera-fill.svg");mask-image:url("./assets/icons/bootstrap/camera-fill.svg")}
+.bi-mic-fill{-webkit-mask-image:url("./assets/icons/bootstrap/mic-fill.svg");mask-image:url("./assets/icons/bootstrap/mic-fill.svg")}
+.bi-clock-fill{-webkit-mask-image:url("./assets/icons/bootstrap/clock-fill.svg");mask-image:url("./assets/icons/bootstrap/clock-fill.svg")}
+.bi-check-circle-fill{-webkit-mask-image:url("./assets/icons/bootstrap/check-circle-fill.svg");mask-image:url("./assets/icons/bootstrap/check-circle-fill.svg")}
+.bi-arrow-right{-webkit-mask-image:url("./assets/icons/bootstrap/arrow-right.svg");mask-image:url("./assets/icons/bootstrap/arrow-right.svg")}
+.bi-x-lg{-webkit-mask-image:url("./assets/icons/bootstrap/x-lg.svg");mask-image:url("./assets/icons/bootstrap/x-lg.svg")}
+.heart .bi-icon{font-size:18px}
+.qa-close .bi-icon{font-size:15px}
+.flight-plane .bi-icon{font-size:23px}
