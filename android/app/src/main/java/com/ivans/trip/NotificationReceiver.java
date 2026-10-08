@@ -21,6 +21,8 @@ public class NotificationReceiver extends BroadcastReceiver {
         String screen = intent.getStringExtra("screen");
         String surprise = intent.getStringExtra("surprise");
 
+        if (shouldSuppressTimedDuplicate(context, surprise)) return;
+
         if (channel == null) channel = NotificationScheduler.CHANNEL_LOVE;
         if (title == null) title = "От мужа ♥";
         if (text == null) text = "Я кое-что оставил внутри. Откроешь?";
@@ -61,5 +63,20 @@ public class NotificationReceiver extends BroadcastReceiver {
         NotificationManager manager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         manager.notify(id, builder.build());
+    }
+
+    private boolean shouldSuppressTimedDuplicate(Context context, String surprise) {
+        if (surprise == null) return false;
+        String zone = GeofenceManager.getLastZone(context);
+
+        // Geofence already provides these arrival milestones. Timed alarms remain only
+        // as fallback when background location did not resolve a zone.
+        if ("day-11-0".equals(surprise)) {
+            return "tjm".equals(zone) || "kurgan".equals(zone);
+        }
+        if ("day-17-1".equals(surprise)) {
+            return "svo".equals(zone) || "rybinsk".equals(zone);
+        }
+        return false;
     }
 }
