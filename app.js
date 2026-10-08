@@ -127,8 +127,15 @@ function duration(ms){
   return `${Math.floor(h/24)} д ${h%24} ч`;
 }
 
+function tripClock(date=now()){
+  const zone=date<T.outArr || date>=T.backArr ? "Europe/Moscow" : "Asia/Yekaterinburg";
+  const parts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:zone,year:"numeric",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(date).map(p=>[p.type,p.value]));
+  return {year:Number(parts.year),month:Number(parts.month)-1,day:Number(parts.day),minutes:Number(parts.hour)*60+Number(parts.minute)};
+}
+
 function dayNumber(date=now()){
-  const y=date.getFullYear(),m=date.getMonth(),d=date.getDate();
+  const clock=tripClock(date);
+  const y=clock.year,m=clock.month,d=clock.day;
   return y===2026 && m===9 && d>=10 && d<=17 ? d : null;
 }
 
@@ -156,7 +163,7 @@ function unlocked(day,date=now()){
   if(current>day) return 7;
   if(current<day) return -1;
 
-  const cur=date.getHours()*60+date.getMinutes();
+  const cur=tripClock(date).minutes;
   let last=-1;
   items.forEach((item,i)=>{if(minutes(item.time)<=cur) last=i;});
   if(day===17 && localStorage.getItem("trip-home-arrived")!=="1") last=Math.min(last,6);
@@ -337,12 +344,13 @@ function renderPhase(date=now()){
 }
 
 function renderBefore(){
+  $("momentNav").hidden=true;
   $("scene").dataset.mode="before";
   $("media").hidden=true;
   $("media").innerHTML="";
   $("kicker").textContent="до поездки";
   $("title").textContent="Пока ты ещё дома";
-  $("text").textContent="";
+  $("text").textContent="Пока ты рядом — обниму по-настоящему. В дороге здесь буду я. А дома мы с котами будем ждать тебя.";
   $("action").innerHTML="";
   $("qaPrompt").hidden=!qa();
   $("qaPrompt").textContent="До 10 октября здесь должна быть одна короткая твоя фраза. Без отдельного экрана подготовки.";
@@ -386,6 +394,7 @@ function renderFlight(p,date=now()){
   $("title").textContent="";
   $("text").textContent="";
   $("qaPrompt").hidden=true;
+  $("momentNav").hidden=true;
   $("action").innerHTML=flightMarkup(p.flight,date);
 }
 
@@ -422,6 +431,7 @@ function renderMoment(){
   renderMedia(item,locked);
   renderAction(item,locked);
   renderNextMoment(view.day,view.index);
+  renderNavigation();
 }
 
 function renderMedia(item,locked){
@@ -445,8 +455,8 @@ function renderAction(item,locked){
   if(locked) return;
 
   if(item.type==="hug"){
-    mount.innerHTML=`<button class="primary" id="momentHug" type="button">обнять меня ♥</button>`;
-    $("momentHug").addEventListener("click",hug);
+    mount.innerHTML=`<button class="hold-button" id="momentHug" type="button"><span class="hold-ring"><span class="bi-icon bi-heart-fill" aria-hidden="true"></span></span><span><strong>Обнять меня</strong><br><small>удерживай две секунды</small></span></button>`;
+    setupHold($("momentHug"));
     return;
   }
 
@@ -544,6 +554,11 @@ function sync(){
     return;
   }
 
+  if(p.mode==="home"){
+    view={day:17,index:7,forced:false};
+    renderMoment();
+    return;
+  }
   const idx=Math.max(0,unlocked(day,date));
   view={day,index:idx,forced:false};
   renderMoment();
@@ -555,16 +570,45 @@ function move(delta){
   if(target<0||target>7) return;
   const last=unlocked(view.day);
   if(!qa() && target>last) return;
-  setMoment(view.day,target,{forced:qa()&&view.forced});
+  setMoment(view.day,target,{forced:true});
+}
+
+function setupHold(button){
+  let frame=0,start=0,holding=false;
+  const ring=button.querySelector(".hold-ring");
+  function cancel(){holding=false;cancelAnimationFrame(frame);ring.style.setProperty("--hold",0);}
+  function tick(time){
+    if(!holding) return;
+    const progress=Math.min(1,(time-start)/2000);
+    ring.style.setProperty("--hold",progress);
+    if(progress===1){cancel();hug();button.querySelector("small").textContent="Я рядом. Можно обнять ещё раз";}
+    else frame=requestAnimationFrame(tick);
+  }
+  function begin(){if(holding) return;holding=true;start=performance.now();frame=requestAnimationFrame(tick);}
+  button.addEventListener("pointerdown",e=>{if(e.button!==0) return;button.setPointerCapture(e.pointerId);begin();});
+  for(const event of ["pointerup","pointercancel","lostpointercapture","blur"]) button.addEventListener(event,cancel);
+  button.addEventListener("keydown",e=>{if(e.code==="Space"||e.code==="Enter"){e.preventDefault();if(!e.repeat) begin();}});
+  button.addEventListener("keyup",cancel);
+}
+
+function renderNavigation(){
+  const nav=$("momentNav");
+  nav.hidden=!view.day;
+  $("prevMoment").disabled=view.index===0;
+  $("nextMoment").disabled=view.index>=unlocked(view.day);
+  $("momentPosition").textContent=`${view.index+1} / ${CONTENT.days[view.day].length}`;
+  $("homeConfirm").hidden=now()<T.backArr || localStorage.getItem("trip-home-arrived")==="1";
 }
 
 function setupSwipe(){
   $("sceneMain").addEventListener("touchstart",e=>{
+    if(e.target.closest("button,audio")){swipeX=null;return;}
     const t=e.changedTouches[0];
     swipeX=t.clientX;swipeY=t.clientY;
   },{passive:true});
   $("sceneMain").addEventListener("touchend",e=>{
     const t=e.changedTouches[0];
+    if(swipeX===null) return;
     const dx=t.clientX-swipeX,dy=t.clientY-swipeY;
     if(Math.abs(dx)<52||Math.abs(dx)<Math.abs(dy)*1.25) return;
     move(dx<0?1:-1);
@@ -659,14 +703,21 @@ function openQa(){
 function setup(){
   $("quickHug").addEventListener("click",hug);
   setupSwipe();
+  $("prevMoment").addEventListener("click",()=>move(-1));
+  $("nextMoment").addEventListener("click",()=>move(1));
+  $("homeConfirm").addEventListener("click",()=>{
+    localStorage.setItem("trip-home-arrived","1");
+    view={day:null,index:0,forced:false};sync();toast("Мы снова вместе ♥");
+  });
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden){view.forced=false;sync();refreshForegroundLocation();}});
   setupQa();
 
   if(!handleIncoming()) sync();
   refreshForegroundLocation();
 
   setInterval(()=>{
-    if(!view.forced) sync();
-    else renderPhase();
+    if(!view.forced || view.day!==dayNumber()) sync();
+    else {renderPhase();if(view.day) renderNextMoment(view.day,view.index);}
   },30000);
 
   setInterval(refreshForegroundLocation,300000);

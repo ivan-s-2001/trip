@@ -492,3 +492,14 @@ button{font:inherit;color:inherit}
 .heart .bi-icon{font-size:18px}
 .qa-close .bi-icon{font-size:15px}
 .flight-plane .bi-icon{font-size:23px}
+
+.moment-nav{display:flex;align-items:center;gap:12px;margin-top:16px;position:relative;z-index:3;flex-shrink:0}
+.moment-nav button{min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:50%;background:var(--paper);display:grid;place-items:center}
+.moment-nav button:disabled{opacity:.3}
+.moment-nav span{font-size:12px;color:var(--muted)}
+.moment-nav .bi-icon{color:var(--ink);font-size:16px}
+.back-arrow{transform:rotate(180deg)}
+.moment-nav #homeConfirm{margin-left:auto;border-radius:20px;padding:0 14px}
+.scene[data-mode="hug"] .moment-nav>span{color:#fff}
+button:focus-visible{outline:3px solid #b56a82;outline-offset:3px}
+@media(max-height:620px){.moment-nav{margin-top:8px}.flight{gap:9px}.action{margin-top:10px}}
