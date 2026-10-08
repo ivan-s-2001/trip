@@ -67,15 +67,16 @@ public class NotificationReceiver extends BroadcastReceiver {
 
     private boolean shouldSuppressTimedDuplicate(Context context, String surprise) {
         if (surprise == null) return false;
-        String zone = GeofenceManager.getLastZone(context);
-
-        // Geofence already provides these arrival milestones. Timed alarms remain only
-        // as fallback when background location did not resolve a zone.
-        if ("day-11-0".equals(surprise)) {
-            return "tjm".equals(zone) || "kurgan".equals(zone);
-        }
-        if ("day-17-1".equals(surprise)) {
-            return "svo".equals(zone) || "rybinsk".equals(zone);
+        // Keep old installed alarms from announcing an arrival by clock time.
+        if ("day-11-0".equals(surprise) || "day-17-1".equals(surprise)) return true;
+        if (surprise.startsWith("day-") && GeofenceManager.hasRequiredPermissions(context)) {
+            String[] parts = surprise.split("-");
+            try {
+                int day = Integer.parseInt(parts[1]);
+                if (day >= 11 && day <= 16) {
+                    return !"kurgan".equals(GeofenceManager.getLastZone(context));
+                }
+            } catch (NumberFormatException ignored) {}
         }
         return false;
     }

@@ -334,6 +334,8 @@ function hug(){
 function renderPhase(date=now()){
   const p=phase(date);
   $("scene").dataset.mode=p.mode;
+  const progress=Math.max(0,Math.min(1,(date-T.tripStart)/(T.backArr-T.tripStart)));
+  $("journeyProgress").style.width=`${Math.round(progress*100)}%`;
   $("sceneDate").textContent=p.date;
   $("sceneStatus").textContent=p.status;
   $("nextLabel").textContent=p.nextLabel;
@@ -379,8 +381,8 @@ function flightMarkup(flight,date=now()){
         </div>
       </div>
       <div class="flight-times">
-        <div><small>вылет</small><strong>${flight.depLabel}</strong></div>
-        <div style="text-align:right"><small>прилёт</small><strong>${flight.arrLabel}</strong></div>
+        <div><small>вылет · местное время</small><strong>${flight.depLabel}</strong></div>
+        <div style="text-align:right"><small>прилёт · местное время</small><strong>${flight.arrLabel}</strong></div>
       </div>
       <div class="flight-progress"><span style="width:${Math.round(pct*100)}%"></span></div>
       <div class="flight-meta"><span>${flight.duration}</span><span>без пересадок</span></div>
@@ -421,7 +423,7 @@ function renderMoment(){
   $("title").textContent=locked?"Ещё не время":item.title;
 
   const actual=Array.isArray(item.text)?item.text.filter(Boolean).join(" · "):(item.text||"");
-  $("text").textContent=locked?"":actual;
+  $("text").textContent=locked||item.type==="five"?"":actual;
 
   $("qaPrompt").hidden=!qa();
   $("qaPrompt").textContent=locked
@@ -446,7 +448,7 @@ function renderMedia(item,locked){
   mount.hidden=false;
   mount.innerHTML=qa()
     ? `<div class="media-placeholder"><strong>${item.theme}</strong></div><img src="./assets/photos/${file}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.remove()">`
-    : `<img src="./assets/photos/${file}" alt="" onerror="this.parentElement.hidden=true;this.remove()">`;
+    : `<div class="photo-keepsake" aria-hidden="true"><span class="bi-icon bi-heart-fill"></span><span>наше маленькое место</span></div><img src="./assets/photos/${file}" alt="${item.title}" onload="this.previousElementSibling.hidden=true" onerror="this.remove()">`;
 }
 
 function renderAction(item,locked){
@@ -462,6 +464,7 @@ function renderAction(item,locked){
 
   if(item.type==="voice"){
     mount.innerHTML=`<div class="voice-box"><audio controls preload="metadata" src="./assets/audio/${item.media}"></audio></div>`;
+    mount.querySelector("audio").addEventListener("error",()=>{mount.innerHTML="";},{once:true});
     return;
   }
 
@@ -474,7 +477,7 @@ function renderAction(item,locked){
     mount.querySelectorAll("[data-choice]").forEach(btn=>btn.addEventListener("click",()=>{
       localStorage.setItem(key,btn.dataset.choice);
       renderAction(item,false);
-      toast("сохранил ♥");
+      toast("Твой выбор сохранён на этом устройстве");
     }));
     return;
   }
@@ -489,7 +492,7 @@ function renderAction(item,locked){
 
   if(item.type==="route"){
     const f=view.day===10?FLIGHTS.out:view.day===17?FLIGHTS.back:null;
-    if(f){
+    if(f && (view.day===10 || view.index===0)){
       mount.innerHTML=flightMarkup(f);
     }else if(qa()){
       mount.innerHTML=`<div class="qa-note">${item.theme}</div>`;
@@ -517,6 +520,12 @@ function renderNextMoment(day,index){
   if(next && index<last){
     $("nextLabel").textContent="следующий открытый";
     $("nextValue").textContent=next.title;
+    return;
+  }
+
+  if(next?.conditional==="home-arrived"){
+    $("nextLabel").textContent="последний момент";
+    $("nextValue").textContent="когда будешь дома";
     return;
   }
 

@@ -10,6 +10,7 @@ import com.google.android.gms.location.GeofencingEvent;
 
 import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
 
 public class GeofenceReceiver extends BroadcastReceiver {
     @Override
@@ -47,13 +48,13 @@ public class GeofenceReceiver extends BroadcastReceiver {
                 if (zone.equals(previous)) {
                     prefs.edit().putString(GeofenceManager.KEY_ZONE, "between").apply();
                 }
-                notifyTransition(context, zone, false);
+                if(zone.equals(previous)) notifyTransition(context, zone, false);
             }
         }
     }
 
     private void notifyTransition(Context context, String zone, boolean entered) {
-        Calendar now = Calendar.getInstance();
+        Calendar now = Calendar.getInstance(TimeZone.getTimeZone("Europe/Moscow"));
         int year = now.get(Calendar.YEAR);
         int month = now.get(Calendar.MONTH);
         int day = now.get(Calendar.DAY_OF_MONTH);
@@ -72,7 +73,7 @@ public class GeofenceReceiver extends BroadcastReceiver {
             } else if ("tjm".equals(zone) && day == 11) {
                 title = "Тюмень ✓";
                 text = "Самолёт позади. Дальше — дорога в Курган.";
-            } else if ("kurgan".equals(zone) && day >= 11 && day <= 16) {
+            } else if ("kurgan".equals(zone) && day >= 11 && day <= 17) {
                 title = "Курган ✓";
                 text = "Ты добралась. Теперь можно немного выдохнуть ♥";
             } else if ("tjm".equals(zone) && (day == 16 || day == 17)) {
@@ -97,19 +98,30 @@ public class GeofenceReceiver extends BroadcastReceiver {
 
         if (title == null) return;
 
+        // One notification per route milestone, even when GPS crosses a boundary repeatedly.
+        String leg = day >= 16 ? "back" : "out";
+        String milestone = "sent-" + leg + "-" + zone + "-" + entered;
+        SharedPreferences state = context.getSharedPreferences(GeofenceManager.PREFS, Context.MODE_PRIVATE);
+        if (state.getBoolean(milestone, false)) return;
+        if (android.os.Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(
+                android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return;
+        state.edit().putBoolean(milestone, true).apply();
+
         Intent notification = new Intent(context, NotificationReceiver.class);
         notification.putExtra("notification_id", 8100 + Math.abs((zone + entered + day).hashCode() % 700));
         notification.putExtra("channel", NotificationScheduler.CHANNEL_TRIP);
         notification.putExtra("title", title);
         notification.putExtra("text", text);
         notification.putExtra("screen", "home");
+        if (entered && "rybinsk".equals(zone)) notification.putExtra("surprise", "day-17-7");
         context.sendBroadcast(notification);
     }
 
     private boolean isReturnWindow() {
-        Calendar now = Calendar.getInstance();
+        Calendar now = Calendar.getInstance(TimeZone.getTimeZone("Europe/Moscow"));
         return now.get(Calendar.YEAR) == 2026 &&
                 now.get(Calendar.MONTH) == Calendar.OCTOBER &&
-                now.get(Calendar.DAY_OF_MONTH) >= 17;
+                now.get(Calendar.DAY_OF_MONTH) >= 17 &&
+                now.get(Calendar.DAY_OF_MONTH) <= 18;
     }
 }

@@ -152,7 +152,11 @@ public final class NotificationScheduler {
             for (int slot = 0; slot < 8; slot++) {
                 // Финальный «Домой» не планируем по часам: он открывается только после
                 // фактического возвращения в Рыбинск через кнопку «я уже дома».
-                if (day == 17 && slot == 7) continue;
+                // Arrival is a location event, never an assumption based on the timetable.
+                if ((day == 11 && slot == 0) || (day == 17 && (slot == 1 || slot == 7))) {
+                    cancelMoment(context, day, slot);
+                    continue;
+                }
 
                 int hour = TIMES[dayIndex][slot * 2];
                 int minute = TIMES[dayIndex][slot * 2 + 1];
@@ -173,6 +177,16 @@ public final class NotificationScheduler {
                         "day-" + day + "-" + slot
                 );
             }
+        }
+    }
+
+    private static void cancelMoment(Context context, int day, int slot) {
+        Intent intent = new Intent(context, NotificationReceiver.class);
+        PendingIntent pending = PendingIntent.getBroadcast(context, 6000 + day * 10 + slot,
+                intent, PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
+        if (pending != null) {
+            ((AlarmManager) context.getSystemService(Context.ALARM_SERVICE)).cancel(pending);
+            pending.cancel();
         }
     }
 
