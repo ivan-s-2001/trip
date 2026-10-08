@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.webkit.JavascriptInterface;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -47,6 +48,7 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setLoadsImagesAutomatically(true);
+        settings.setAllowFileAccess(true);
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
@@ -72,6 +74,22 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return handleUrl(Uri.parse(url));
             }
+
+            @Override
+            public void onReceivedError(
+                    WebView view,
+                    WebResourceRequest request,
+                    WebResourceError error
+            ) {
+                super.onReceivedError(view, request, error);
+
+                if (request.isForMainFrame() &&
+                        !request.getUrl().toString().startsWith("file:///android_asset/")) {
+                    String screen = getIntent().getStringExtra("screen");
+                    String surprise = getIntent().getStringExtra("surprise");
+                    view.loadUrl(offlineUrlFor(screen, surprise));
+                }
+            }
         });
 
         loadFromIntent(getIntent());
@@ -84,6 +102,10 @@ public class MainActivity extends Activity {
     }
 
     private boolean handleUrl(Uri uri) {
+        if ("file".equals(uri.getScheme())) {
+            return false;
+        }
+
         String host = uri.getHost();
         String path = uri.getPath();
         if ("ivan-s-2001.github.io".equals(host) && path != null && path.startsWith("/trip")) {
