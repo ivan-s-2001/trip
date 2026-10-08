@@ -14,6 +14,7 @@ public class BootReceiver extends BroadcastReceiver {
                 Intent.ACTION_TIME_CHANGED.equals(action)) {
             NotificationScheduler.ensureChannels(context);
             NotificationScheduler.scheduleAll(context);
+            GeofenceManager.registerAll(context);
         }
     }
 }
