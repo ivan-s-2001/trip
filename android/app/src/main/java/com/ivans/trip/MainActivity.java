@@ -2,12 +2,15 @@ package com.ivans.trip;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -18,6 +21,8 @@ import android.webkit.WebViewClient;
 public class MainActivity extends Activity {
     private static final String SITE_URL = "https://ivan-s-2001.github.io/trip/";
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2601;
+    private static final int LOCATION_PERMISSION_REQUEST = 2602;
+    private static final int BACKGROUND_LOCATION_PERMISSION_REQUEST = 2603;
     private WebView webView;
 
     @Override
@@ -31,6 +36,7 @@ public class MainActivity extends Activity {
         NotificationScheduler.ensureChannels(this);
         NotificationScheduler.scheduleAll(this);
         requestNotificationsIfNeeded();
+        requestLocationIfNeeded();
 
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(247, 240, 232));
@@ -49,6 +55,8 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.setSafeBrowsingEnabled(true);
         }
+
+        webView.addJavascriptInterface(new NativeBridge(), "TripNative");
 
         if ("qa".equals(BuildConfig.BUILD_TYPE)) {
             webView.addJavascriptInterface(new QaBridge(), "TripQA");
@@ -104,6 +112,23 @@ public class MainActivity extends Activity {
         return url.toString();
     }
 
+    private final class NativeBridge {
+        @JavascriptInterface
+        public String getZone() {
+            return GeofenceManager.getLastZone(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public boolean isHomeArrived() {
+            return GeofenceManager.isHomeArrived(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public boolean hasBackgroundLocation() {
+            return GeofenceManager.hasRequiredPermissions(MainActivity.this);
+        }
+    }
+
     private final class QaBridge {
         @JavascriptInterface
         public void notify(String surprise) {
@@ -118,6 +143,84 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void requestLocationIfNeeded() {
+        boolean fine = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+
+        if (!fine) {
+            requestPermissions(
+                    new String[]{
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                    },
+                    LOCATION_PERMISSION_REQUEST
+            );
+            return;
+        }
+
+        requestBackgroundLocationIfNeeded();
+    }
+
+    private void requestBackgroundLocationIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            GeofenceManager.registerAll(this);
+            return;
+        }
+
+        if (checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            GeofenceManager.registerAll(this);
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+            requestPermissions(
+                    new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                    BACKGROUND_LOCATION_PERMISSION_REQUEST
+            );
+            return;
+        }
+
+        SharedPreferences prefs = getSharedPreferences("trip_permissions", MODE_PRIVATE);
+        if (prefs.getBoolean("background_location_prompted", false)) return;
+        prefs.edit().putBoolean("background_location_prompted", true).apply();
+
+        new AlertDialog.Builder(this)
+                .setTitle("Чтобы поездка жила сама")
+                .setMessage("Trip может замечать только ключевые точки маршрута в фоне — Рыбинск, Шереметьево, Тюмень и Курган — и присылать локальные уведомления. Координаты никуда не отправляются. В настройках геолокации выбери «Разрешать всегда».")
+                .setNegativeButton("Не сейчас", null)
+                .setPositiveButton("Открыть настройки", (dialog, which) -> {
+                    Intent settings = new Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:" + getPackageName())
+                    );
+                    startActivity(settings);
+                })
+                .show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == LOCATION_PERMISSION_REQUEST) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+                requestBackgroundLocationIfNeeded();
+            }
+        } else if (requestCode == BACKGROUND_LOCATION_PERMISSION_REQUEST) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+                    checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                            == PackageManager.PERMISSION_GRANTED) {
+                GeofenceManager.registerAll(this);
+            }
+        }
+    }
+
     private void requestNotificationsIfNeeded() {
         if (Build.VERSION.SDK_INT >= 33 &&
                 checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -125,6 +228,14 @@ public class MainActivity extends Activity {
                     new String[]{Manifest.permission.POST_NOTIFICATIONS},
                     NOTIFICATION_PERMISSION_REQUEST
             );
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (GeofenceManager.hasRequiredPermissions(this)) {
+            GeofenceManager.registerAll(this);
         }
     }
 
