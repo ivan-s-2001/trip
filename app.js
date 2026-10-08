@@ -363,7 +363,7 @@ function flightMarkup(flight,date=now()){
           <b>${flight.fromCode}</b>
           <small>${flight.fromExtra}</small>
         </div>
-        <div class="flight-plane">✈</div>
+        <div class="flight-plane"><span class="bi-icon bi-airplane-fill" aria-hidden="true"></span></div>
         <div class="airport">
           <small>${flight.toCity}</small>
           <b>${flight.toCode}</b>
