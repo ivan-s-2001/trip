@@ -134,6 +134,20 @@ public class MainActivity extends Activity {
         return url.toString();
     }
 
+    private String offlineUrlFor(String screen, String surprise) {
+        StringBuilder url = new StringBuilder("file:///android_asset/www/index.html?native=1&offline=1");
+        if ("qa".equals(BuildConfig.BUILD_TYPE)) {
+            url.append("&qa=1");
+        }
+        if (surprise != null && !surprise.isEmpty()) {
+            url.append("&surprise=").append(Uri.encode(surprise));
+        }
+        if (screen != null && !screen.isEmpty()) {
+            url.append("#").append(screen);
+        }
+        return url.toString();
+    }
+
     private final class NativeBridge {
         @JavascriptInterface
         public String getZone() {
