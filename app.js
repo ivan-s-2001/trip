@@ -35,6 +35,71 @@ const TYPE_LABELS = {
 let view = {day:null,index:0,forced:false};
 let swipeX = 0;
 let swipeY = 0;
+let foregroundZone = "";
+
+const GEO_ZONES = [
+  {id:"rybinsk",lat:58.0500,lon:38.8333,radius:15000},
+  {id:"svo",lat:55.97264,lon:37.41459,radius:5000},
+  {id:"tjm",lat:57.16833,lon:65.31611,radius:5000},
+  {id:"kurgan",lat:55.4500,lon:65.3333,radius:15000}
+];
+
+function nativeZone(){
+  try{
+    return window.TripNative?.getZone?.() || "";
+  }catch(_){
+    return "";
+  }
+}
+
+function nativeHome(){
+  try{
+    return !!window.TripNative?.isHomeArrived?.();
+  }catch(_){
+    return false;
+  }
+}
+
+function activeZone(){
+  const native=nativeZone();
+  return native && native!=="between" ? native : foregroundZone;
+}
+
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000;
+  const rad=x=>x*Math.PI/180;
+  const dLat=rad(lat2-lat1);
+  const dLon=rad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2+
+    Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+function zoneFromCoords(lat,lon){
+  let best="";
+  let bestDistance=Infinity;
+  for(const zone of GEO_ZONES){
+    const distance=haversine(lat,lon,zone.lat,zone.lon);
+    if(distance<=zone.radius && distance<bestDistance){
+      best=zone.id;
+      bestDistance=distance;
+    }
+  }
+  return best;
+}
+
+function refreshForegroundLocation(){
+  if(window.TripNative) return;
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      foregroundZone=zoneFromCoords(pos.coords.latitude,pos.coords.longitude);
+      if(!view.forced) sync();
+    },
+    ()=>{},
+    {enableHighAccuracy:false,timeout:7000,maximumAge:300000}
+  );
+}
 
 function qa(){
   return new URLSearchParams(location.search).get("qa")==="1";
@@ -99,6 +164,12 @@ function unlocked(day,date=now()){
 }
 
 function phase(date=now()){
+  const zone=activeZone();
+
+  if(nativeHome()){
+    localStorage.setItem("trip-home-arrived","1");
+  }
+
   if(date<T.tripStart){
     return {
       mode:"before", date:"10—17 октября", status:"Рыбинск → Курган",
@@ -107,19 +178,88 @@ function phase(date=now()){
     };
   }
 
-  if(date<T.outDep){
-    return {
-      mode:"road",date:dayLabel(10),status:"дорога → Москва → SVO",
-      from:"Рыбинск",to:"SVO",
-      nextLabel:"рейс SU1502",nextValue:`23:00 · через ${duration(T.outDep-date)}`
-    };
-  }
-
+  // Пока самолёт по расписанию в воздухе, рейс важнее GPS/geofence.
   if(between(date,T.outDep,T.outArr)){
     return {
       mode:"flight",date:"SU 1502 · в полёте",status:"Москва → Тюмень",
       from:"SVO",to:"TJM",flight:FLIGHTS.out,
       nextLabel:"до посадки",nextValue:duration(T.outArr-date)
+    };
+  }
+
+  if(between(date,T.backDep,T.backArr)){
+    return {
+      mode:"flight",date:"SU 1503 · в полёте",status:"Тюмень → Москва",
+      from:"TJM",to:"SVO",flight:FLIGHTS.back,
+      nextLabel:"до посадки",nextValue:duration(T.backArr-date)
+    };
+  }
+
+  // Фактическая точка маршрута переопределяет предположение по времени.
+  if(zone==="rybinsk"){
+    if(date>=T.backArr || localStorage.getItem("trip-home-arrived")==="1"){
+      return {
+        mode:"home",date:"17 октября",status:"Рыбинск ♥",
+        from:"Курган",to:"Рыбинск",
+        nextLabel:"поездка",nextValue:"закончилась"
+      };
+    }
+    return {
+      mode:"road",date:dayLabel(dayNumber(date)),status:"Рыбинск",
+      from:"Рыбинск",to:"Москва",
+      nextLabel:"дальше",nextValue:"Москва → SVO"
+    };
+  }
+
+  if(zone==="svo"){
+    if(date<T.outDep){
+      return {
+        mode:"road",date:dayLabel(10),status:"Шереметьево · терминал B",
+        from:"SVO",to:"TJM",
+        nextLabel:"SU1502",nextValue:`23:00 · через ${duration(T.outDep-date)}`
+      };
+    }
+    return {
+      mode:"road",date:dayLabel(17),status:"Шереметьево ✓",
+      from:"Москва",to:"Рыбинск",
+      nextLabel:"последний участок",nextValue:"домой"
+    };
+  }
+
+  if(zone==="tjm"){
+    if(date<T.anniversary){
+      return {
+        mode:"road",date:dayLabel(11),status:"Тюмень",
+        from:"Тюмень",to:"Курган",
+        nextLabel:"дальше",nextValue:"Тюмень → Курган"
+      };
+    }
+    return {
+      mode:"road",date:dayLabel(dayNumber(date)||17),status:"Тюмень · дорога домой",
+      from:"TJM",to:"SVO",
+      nextLabel:"SU1503",nextValue:"04:45"
+    };
+  }
+
+  if(zone==="kurgan" && date<T.backDep){
+    const anniversary=dayNumber(date)===16;
+    return {
+      mode:anniversary?"anniversary":"day",
+      date:anniversary?"16 октября · 5 лет":dayLabel(dayNumber(date)),
+      status:anniversary?"наш день · Курган":"Курган",
+      from:anniversary?"5 лет":"Курган",
+      to:anniversary?"♥":"домой",
+      nextLabel:anniversary?"до SU1503":"до дороги домой",
+      nextValue:duration(T.backDep-date)
+    };
+  }
+
+  // Fallback по расписанию, когда геолокация недоступна или между зонами.
+  if(date<T.outDep){
+    return {
+      mode:"road",date:dayLabel(10),status:"дорога → Москва → SVO",
+      from:"Рыбинск",to:"SVO",
+      nextLabel:"рейс SU1502",nextValue:`23:00 · через ${duration(T.outDep-date)}`
     };
   }
 
@@ -129,7 +269,7 @@ function phase(date=now()){
       return {
         mode:"road",date:dayLabel(11),status:"Тюмень → Курган",
         from:"Тюмень",to:"Курган",
-        nextLabel:"наземный участок",nextValue:"время ещё не задано"
+        nextLabel:"наземный участок",nextValue:"геолокация уточнит прибытие"
       };
     }
     return {
@@ -150,14 +290,6 @@ function phase(date=now()){
     };
   }
 
-  if(between(date,T.backDep,T.backArr)){
-    return {
-      mode:"flight",date:"SU 1503 · в полёте",status:"Тюмень → Москва",
-      from:"TJM",to:"SVO",flight:FLIGHTS.back,
-      nextLabel:"до посадки",nextValue:duration(T.backArr-date)
-    };
-  }
-
   if(localStorage.getItem("trip-home-arrived")==="1"){
     return {
       mode:"home",date:"17 октября",status:"Рыбинск ♥",
@@ -169,7 +301,7 @@ function phase(date=now()){
   return {
     mode:"road",date:"17 октября",status:"Москва → Рыбинск",
     from:"Москва",to:"Рыбинск",
-    nextLabel:"последний участок",nextValue:"домой"
+    nextLabel:"последний участок",nextValue:"геолокация поймёт, когда дома"
   };
 }
 
@@ -530,11 +662,14 @@ function setup(){
   setupQa();
 
   if(!handleIncoming()) sync();
+  refreshForegroundLocation();
 
   setInterval(()=>{
     if(!view.forced) sync();
     else renderPhase();
   },30000);
+
+  setInterval(refreshForegroundLocation,300000);
 
   if("serviceWorker" in navigator){
     window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
