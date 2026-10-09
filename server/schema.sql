@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS rooms(id TEXT PRIMARY KEY,topic TEXT NOT NULL,created INTEGER NOT NULL);
-INSERT OR IGNORE INTO rooms VALUES('legacy','trip_'||lower(hex(randomblob(24))),0);
+INSERT OR IGNORE INTO rooms VALUES('legacy','up'||lower(hex(randomblob(6))),0);
 CREATE TABLE IF NOT EXISTS access(hash TEXT PRIMARY KEY,role TEXT NOT NULL CHECK(role IN ('wife','husband')),room_id TEXT NOT NULL DEFAULT 'legacy');
 CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,key TEXT NOT NULL,value TEXT NOT NULL,at INTEGER NOT NULL,received INTEGER NOT NULL,room_id TEXT NOT NULL DEFAULT 'legacy');
 CREATE TABLE IF NOT EXISTS state(room_id TEXT NOT NULL,key TEXT NOT NULL,value TEXT NOT NULL,at INTEGER NOT NULL,PRIMARY KEY(room_id,key));

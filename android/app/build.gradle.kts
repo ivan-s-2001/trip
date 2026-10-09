@@ -10,8 +10,8 @@ android {
         applicationId = "com.ivans.trip"
         minSdk = 24
         targetSdk = 35
-        versionCode = 19
-        versionName = "2.3.0"
+        versionCode = 20
+        versionName = "2.3.1"
     }
 
     buildTypes {

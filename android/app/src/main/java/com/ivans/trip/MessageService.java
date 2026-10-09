@@ -64,7 +64,7 @@ public final class MessageService extends Service {
       topic=new JSONObject(readJson(config)).getString("pushTopic");TripCloud.setPushTopic(this,topic);
      }finally{config.disconnect();}
     }
-    if(!topic.matches("trip_[a-f0-9]{48}"))throw new java.io.IOException("Invalid topic");
+    if(!topic.matches("(up[A-Za-z0-9_-]{12}|(trip_|up_)[a-f0-9]{48})"))throw new java.io.IOException("Invalid topic");
     connection=(HttpURLConnection)new URL("https://ntfy.sh/"+topic+"/json").openConnection();pushConnection=connection;
     connection.setConnectTimeout(10000);connection.setReadTimeout(75000);
     if(connection.getResponseCode()!=200)throw new java.io.IOException("Push unavailable");

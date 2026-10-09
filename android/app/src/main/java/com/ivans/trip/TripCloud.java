@@ -20,7 +20,7 @@ public final class TripCloud {
     public static String getAccess(Context context) { return prefs(context).getString("token", ""); }
     public static String getPushTopic(Context context) { return prefs(context).getString("push_topic", ""); }
     public static void setPushTopic(Context context, String topic) {
-        if (!topic.matches("trip_[a-f0-9]{48}")) return;
+        if (!topic.matches("(up[A-Za-z0-9_-]{12}|(trip_|up_)[a-f0-9]{48})")) return;
         if (topic.equals(getPushTopic(context))) return;
         prefs(context).edit().putString("push_topic", topic).apply();
         MessageService.reconnect(context);

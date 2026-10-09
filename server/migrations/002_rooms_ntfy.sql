@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS rooms(id TEXT PRIMARY KEY,topic TEXT NOT NULL,created INTEGER NOT NULL);
-INSERT OR IGNORE INTO rooms VALUES('legacy','trip_'||lower(hex(randomblob(24))),0);
+INSERT OR IGNORE INTO rooms VALUES('legacy','up'||lower(hex(randomblob(6))),0);
 ALTER TABLE access ADD COLUMN room_id TEXT NOT NULL DEFAULT 'legacy';
 ALTER TABLE messages ADD COLUMN room_id TEXT NOT NULL DEFAULT 'legacy';
 ALTER TABLE media ADD COLUMN room_id TEXT NOT NULL DEFAULT 'legacy';

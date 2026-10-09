@@ -13,7 +13,7 @@ const json=async r=>{assert.equal(r.status,200,await r.clone().text());return r.
 const owner='1'.repeat(64),other='2'.repeat(64),recipient='3'.repeat(64);
 await json(await request('setup',null,{token:owner}));await json(await request('setup',null,{token:owner}));await json(await request('setup',null,{token:other}));
 assert.equal(db.prepare('SELECT count(*) n FROM rooms').get().n,3); // legacy + two independent spaces
-const me=await json(await request('me',owner));assert.match(me.pushTopic,/^trip_[a-f0-9]{48}$/);
+const me=await json(await request('me',owner));assert.match(me.pushTopic,/^up[A-Za-z0-9_-]{12}$/);
 const pairing=await json(await request('access',owner,{}));
 await json(await request('pair',null,{code:pairing.code,token:recipient}));
 await json(await request('pair',null,{code:pairing.code,token:recipient})); // network retry

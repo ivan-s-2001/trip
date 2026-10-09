@@ -8,5 +8,5 @@ assert.equal(db.prepare('SELECT room_id FROM access').get().room_id,'legacy');
 assert.equal(db.prepare('SELECT value FROM state WHERE room_id=?').get('legacy').value,'3');
 assert.equal(db.prepare('SELECT room_id FROM media').get().room_id,'legacy');
 assert.equal(db.prepare('SELECT room_id FROM messages').get().room_id,'legacy');
-assert.match(db.prepare('SELECT topic FROM rooms').get().topic,/^trip_[a-f0-9]{48}$/);
+assert.match(db.prepare('SELECT topic FROM rooms').get().topic,/^up[A-Za-z0-9_-]{12}$/);
 console.log('PASS: migration preserves existing access, replies, messages and media');

@@ -2,12 +2,12 @@ const allowedKey=/^trip-(choice-\d+-\d+|care-\d+-\d+|keepsake-\d+-\d+|evening-co
 const hex=bytes=>[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');
 const digest=async value=>hex(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))));
 const secret=()=>hex(crypto.getRandomValues(new Uint8Array(32)));
-async function drainPush(env){
+async function drainPush(env,roomId=null){
  const now=Date.now();
- const jobs=await env.DB.prepare('SELECT p.message_id,p.attempts,r.topic FROM push_jobs p JOIN rooms r ON r.id=p.room_id JOIN messages m ON m.id=p.message_id WHERE p.sent=0 AND p.due<=? AND p.retry_at<=? AND m.cancelled=0 AND m.due<=? LIMIT 30').bind(now,now,now).all();
+ const jobs=await env.DB.prepare('SELECT p.message_id,p.attempts,r.topic FROM push_jobs p JOIN rooms r ON r.id=p.room_id JOIN messages m ON m.id=p.message_id WHERE p.sent=0 AND p.due<=? AND p.retry_at<=? AND m.cancelled=0 AND m.due<=? AND (? IS NULL OR p.room_id=?) LIMIT 30').bind(now,now,now,roomId,roomId).all();
  await Promise.all(jobs.results.map(async job=>{
   try{
-   const response=await fetch('https://ntfy.sh/'+job.topic,{method:'POST',headers:{'Content-Type':'text/plain','Cache':'no','Firebase':'no'},body:'sync',signal:AbortSignal.timeout(8000)});
+   const response=await fetch('https://ntfy.sh/'+job.topic,{method:'POST',headers:{'Content-Type':'text/plain','Cache':'no','Firebase':'no','UnifiedPush':'1'},body:'sync',signal:AbortSignal.timeout(8000)});
    await response.body?.cancel();
    if(!response.ok)throw Error('push-'+response.status);
    await env.DB.prepare('UPDATE push_jobs SET sent=1 WHERE message_id=?').bind(job.message_id).run();
@@ -29,7 +29,7 @@ export default {
     const existing=await env.DB.prepare('SELECT role,room_id FROM access WHERE hash=?').bind(hash).first();
     if(existing&&existing.role!=='husband')return reply({error:'forbidden'},403);
     if(!existing)await env.DB.batch([
-     env.DB.prepare('INSERT OR IGNORE INTO rooms(id,topic,created) VALUES(?,?,?)').bind(roomId,'trip_'+secret().slice(0,48),Date.now()),
+     env.DB.prepare('INSERT OR IGNORE INTO rooms(id,topic,created) VALUES(?,?,?)').bind(roomId,'up'+btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(9)))).replace(/\+/g,'-').replace(/\//g,'_'),Date.now()),
      env.DB.prepare('INSERT OR IGNORE INTO access(hash,role,room_id) VALUES(?,?,?)').bind(hash,'husband',roomId)
     ]);
     return reply({role:'husband'});
@@ -51,6 +51,15 @@ export default {
    const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token)))].map(x=>x.toString(16).padStart(2,'0')).join('');
    const user=await env.DB.prepare('SELECT role,room_id FROM access WHERE hash=?').bind(hash).first();
    if(!user)return reply({error:'unauthorized'},401);
+   if(url.pathname==='/api/push/test'&&request.method==='POST'){
+    if(user.role!=='husband')return reply({error:'forbidden'},403);
+    const room=await env.DB.prepare('SELECT topic FROM rooms WHERE id=?').bind(user.room_id).first();
+    try{
+     const response=await fetch('https://ntfy.sh/'+room.topic,{method:'POST',headers:{'Content-Type':'text/plain','Cache':'no','Firebase':'no','UnifiedPush':'1'},body:'sync',signal:AbortSignal.timeout(15000)});
+     await response.body?.cancel();
+     return reply({ok:response.ok,status:response.status},response.ok?200:502);
+    }catch(error){return reply({ok:false,error:error.name},503);}
+   }
    if(url.pathname==='/api/access' && request.method==='POST'){
     if(user.role!=='husband')return reply({error:'forbidden'},403);
     const code=hex(crypto.getRandomValues(new Uint8Array(5))).toUpperCase(),expires=Date.now()+15*60000;
@@ -71,6 +80,7 @@ export default {
     const id=crypto.randomUUID();await env.DB.prepare('INSERT INTO media(id,mime,data,created,room_id) VALUES(?,?,?,?,?)').bind(id,b.mime,b.data,Date.now(),user.room_id).run();return reply({id,mime:b.mime});
    }
    if(url.pathname==='/api/messages' && request.method==='GET'){
+    if(user.role==='wife'&&ctx)ctx.waitUntil(drainPush(env,user.room_id));
     const query=user.role==='husband'?'SELECT * FROM messages WHERE room_id=? ORDER BY due DESC LIMIT 200':'SELECT * FROM messages WHERE room_id=? AND cancelled=0 AND due<=? ORDER BY due DESC LIMIT 100';
     const q=env.DB.prepare(query);const rows=await (user.role==='husband'?q.bind(user.room_id):q.bind(user.room_id,Date.now())).all();return reply({messages:rows.results.map(x=>({...x,body:JSON.parse(x.body)}))});
    }
@@ -88,7 +98,7 @@ export default {
      env.DB.prepare('INSERT INTO push_jobs(message_id,room_id,due) SELECT id,room_id,due FROM messages WHERE id=? AND room_id=? ON CONFLICT(message_id) DO UPDATE SET due=excluded.due,retry_at=0 WHERE push_jobs.sent=0').bind(id,user.room_id)
     ]);
     if(!result[0].meta.changes)return reply({error:'already-delivered'},409);
-    if(b.due<=Date.now()&&ctx)ctx.waitUntil(drainPush(env));
+    if(b.due<=Date.now()&&ctx)ctx.waitUntil(drainPush(env,user.room_id));
     return reply({id});
    }
    if(url.pathname==='/api/messages/cancel' && request.method==='POST'){
