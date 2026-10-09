@@ -89,16 +89,25 @@ public final class MessageService extends Service {
   if(TripCloud.isHusband(this)||TripCloud.getAccess(this).isEmpty()){stopSelf();return;}
   HttpURLConnection connection=null;
   try{
-   connection=(HttpURLConnection)new URL("https://trip-private.ivan-s-2001.workers.dev/api/messages").openConnection();connection.setConnectTimeout(8000);connection.setReadTimeout(8000);connection.setRequestProperty("Authorization"…17124 tokens truncated…stop;}else open.onclick=reveal;card.append(open);}else if(!localStorage.getItem(key))answer('Открыла');
-if(m.body.interactive==='choice'){const group=document.createElement('div');group.className='letter-choices';const hint=document.createElement('p');hint.className='field-hint';hint.textContent='Твой ответ увидит Ваня';group.append(hint);for(const choice of m.body.choices){const button=document.createElement('button');button.textContent=choice;const selected=localStorage.getItem(key)===choice;button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',String(selected));button.onclick=()=>{answer(choice);group.querySelectorAll('button').forEach(x=>{x.classList.toggle('selected',x===button);x.setAttribute('aria-pressed',String(x===button));});};group.append(button);}card.append(group);}
-if(m.body.interactive==='hug'){const button=document.createElement('button');button.className='letter-open';let count=Number(localStorage.getItem(key))||0;const label=()=>button.textContent=count?`Ещё секундочку · ${count} с`:'Обнимемся?';label();button.onclick=()=>{count++;label();answer(String(count));};card.append(button);}const signature=document.createElement('p');signature.className='letter-signature';signature.textContent='Твой Ваня';card.append(signature);card.id='received-'+m.id;root.append(card);}}
-
-async function tick(){if(loading)return;loading=true;if($('inboxRefresh'))$('inboxRefresh').disabled=true;try{if(TripSync.getRole()==='husband'){mount();await list();}else if(TripSync.getRole()==='wife'){inboxMount();let received;try{const data=await TripSync.call('/api/messages');received=Array.isArray(data.messages)?data.messages:[];try{localStorage.setItem('trip-received-messages',JSON.stringify(received));}catch(_){}$('inboxConnection').textContent='На связи';}catch(_){try{received=JSON.parse(localStorage.getItem('trip-received-messages')||'[]');}catch(_){received=[];}$('inboxConnection').textContent='Без сети · сохранённые письма';}
-const previous=messages[inboxIndex]?.id||localStorage.getItem('trip-inbox-current');messages=received;const index=messages.findIndex(m=>m.id===previous);inboxIndex=index>=0?index:0;
-if(location.hash.startsWith('#message-')&&!openedFromNotification){openedFromNotification=true;const requested=messages.findIndex(m=>m.id===location.hash.slice(9));if(requested>=0)inboxIndex=requested;}
-newestMessage=messages[0]?.id;const unreadNewest=newestMessage&&newestMessage!==messages[inboxIndex]?.id&&!localStorage.getItem('trip-message-'+newestMessage);$('inboxNew').hidden=!unreadNewest;
-$('inboxCount').textContent=messages.length?`${inboxIndex+1} из ${messages.length}`:'Пока нет сообщений';$('inboxNext').disabled=inboxIndex>=messages.length-1;$('inboxPrev').disabled=inboxIndex===0;$('inboxList').disabled=!messages.length;
-if(JSON.stringify(messages[inboxIndex])!==shownMessage||!$('inboxMessages').children.length||$('firstConnect'))drawInbox();}}catch(_){if($('inboxConnection'))$('inboxConnection').textContent='Не удалось обновить · попробуй снова';}finally{loading=false;if($('inboxRefresh'))$('inboxRefresh').disabled=false;}}
-
-document.addEventListener('DOMContentLoaded',()=>{if((window.TripNative?.getAppRole?.()==='wife'||new URLSearchParams(location.search).get('app')==='wife')&&!TripSync.getRole()){inboxMount();$('inboxConnection').textContent='Ещё не подключено';$('inboxMessages').innerHTML='<article class="inbox-empty"><span class="bi-icon bi-house-heart-fill" aria-hidden="true"></span><h3>Даже когда<br>ты далеко</h3><p>Здесь будут письма, фотографии и голос Вани. Подключи приложение по его коду.</p><button id="firstConnect" class="primary" type="button">Подключиться к Ване</button></article>';$('firstConnect').onclick=()=>$('connectSheet').showModal();}setTimeout(tick,800);setInterval(()=>{if(!document.hidden)tick();},15000);window.addEventListener('online',tick);window.addEventListener('trip-connected',tick);window.addEventListener('trip-messages',tick);window.addEventListener('focus',tick);});
-})();
+   connection=(HttpURLConnection)new URL("https://trip-private.ivan-s-2001.workers.dev/api/messages").openConnection();connection.setConnectTimeout(8000);connection.setReadTimeout(8000);connection.setRequestProperty("Authorization","Bearer "+TripCloud.getAccess(this));
+   if(connection.getResponseCode()!=200)return;
+   JSONArray messages=new JSONObject(readJson(connection)).getJSONArray("messages");android.content.SharedPreferences prefs=getSharedPreferences("trip_messages",MODE_PRIVATE);
+   for(int i=messages.length()-1;i>=0;i--){
+    JSONObject message=messages.getJSONObject(i);String id=message.getString("id");if(prefs.getBoolean(id,false))continue;
+    if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED)continue;
+    Intent open=new Intent(this,MainActivity.class);open.putExtra("screen","message-"+id);open.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+    int notificationId=10000+Math.abs(id.hashCode()%100000);PendingIntent content=PendingIntent.getActivity(this,notificationId,open,PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
+    Notification.Builder n=Build.VERSION.SDK_INT>=26?new Notification.Builder(this,NotificationScheduler.CHANNEL_TRIP):new Notification.Builder(this);
+    n.setDefaults(Notification.DEFAULT_ALL).setSmallIcon(R.drawable.ic_heart_notification).setContentTitle("От Вани ♥").setContentText(message.getString("title")).setContentIntent(content).setAutoCancel(true);
+    ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(notificationId,n.build());prefs.edit().putBoolean(id,true).commit();
+   }
+   syncGeofences();
+  }catch(Exception ignored){}finally{if(connection!=null)connection.disconnect();}
+ }
+ @Override public int onStartCommand(Intent intent,int flags,int startId){
+  if(intent!=null&&"reconnect".equals(intent.getAction())){HttpURLConnection connection=pushConnection;if(connection!=null)connection.disconnect();executor.execute(this::check);}
+  return START_STICKY;
+ }
+ @Override public void onDestroy(){running=false;HttpURLConnection connection=pushConnection;if(connection!=null)connection.disconnect();if(executor!=null)executor.shutdownNow();super.onDestroy();}
+ @Override public IBinder onBind(Intent intent){return null;}
+}
