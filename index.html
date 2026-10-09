@@ -10,7 +10,7 @@
   <title>мы</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./styles.css?v=20261009-ntfy1" />
+  <link rel="stylesheet" href="./styles.css?v=20261009-design1" />
 </head>
 <body>
   <main class="scene" id="scene">
@@ -69,11 +69,24 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <dialog id="connectSheet" class="connect-sheet"><button id="connectClose" type="button" aria-label="Закрыть">×</button><h2>Наше место</h2><section id="ownerSetup"><p>В твоём приложении начни здесь. Старый код не нужен.</p><button class="primary" id="createRoom" type="button">Создать наше место</button><p>Уже подключённое приложение откроет твоё место автоматически.</p></section><form id="connectForm"><label for="accessCode">Код из редактора или ссылка подключения</label><input id="accessCode" autocomplete="off" type="text" spellcheck="false" autocapitalize="characters" required placeholder="ABCDE-12345" /><button class="primary" type="submit">Подключить</button><p id="connectError" role="status"></p></form></dialog>
-  <main id="husbandDashboard" class="husband-dashboard" hidden><header><div><p>НАШЕ МЕСТО</p><h1>Её поездка</h1><small id="dashboardStatus"></small><small id="connectionBadge">Проверяем связь</small></div><button id="dashboardRefresh" type="button">Обновить</button><button id="dashboardLogout" type="button">Выйти</button></header><p id="dashboardEmpty">Здесь появятся её первые отметки.</p><section id="deviceConnection"><h2>Подключить Наташу</h2><p>Создай код и введи его в приложении Наташи один раз. После подключения сообщения будут приходить автоматически.</p><button id="createConnection" type="button">Создать код подключения</button><div id="connectionResult" hidden><label for="connectionCode">Код для её приложения</label><textarea id="connectionCode" rows="3" readonly></textarea><button id="copyConnection" type="button">Скопировать код</button><label for="connectionLink">Ссылка для браузера</label><textarea id="connectionLink" rows="4" readonly></textarea><button id="copyConnectionLink" type="button">Скопировать ссылку</button></div><p id="connectionStatus" role="status"></p></section><section id="messageComposer"></section><section id="sentMessages"></section><h2>Сейчас</h2><section id="dashboardState"></section><h2>Последние действия</h2><section id="dashboardEvents"></section></main>
-  <script src="./sync.js?v=20261009-ntfy1" defer></script>
-  <script src="./content.js?v=20261009-ntfy1"></script>
-  <script src="./messages.js?v=20261009-ntfy1" defer></script>
-  <script src="./app.js?v=20261009-ntfy1" defer></script>
+  <dialog id="connectSheet" class="connect-sheet" aria-labelledby="connectTitle">
+    <button id="connectClose" class="icon-button" type="button" aria-label="Закрыть"><span class="bi-icon bi-x-lg" aria-hidden="true"></span></button>
+    <p class="eyebrow">Только для нас</p><h2 id="connectTitle">Всегда рядом</h2>
+    <section id="ownerSetup"><p>Создай место для ваших писем, фотографий и голосовых. Потом подключи телефон Наташи.</p><button class="primary" id="createRoom" type="button">Создать наше место</button><p class="field-hint">Подключение сохранится на этом телефоне.</p></section>
+    <form id="connectForm"><label for="accessCode">Код или ссылка от Вани</label><input id="accessCode" autocomplete="off" type="text" spellcheck="false" autocapitalize="characters" required placeholder="ABCDE-12345" aria-describedby="connectError" /><button class="primary" type="submit">Подключиться</button></form>
+    <p id="connectError" role="alert"></p>
+  </dialog>
+  <main id="husbandDashboard" class="husband-dashboard" hidden>
+    <header class="dashboard-header"><div><p class="eyebrow">Наше место · Ваня</p><h1>Быть рядом</h1><small id="connectionBadge">Проверяем связь</small></div><button id="dashboardRefresh" class="icon-button" type="button" aria-label="Обновить">Обновить</button><button id="dashboardLogout" type="button">Подключение</button></header>
+    <nav class="editor-nav" aria-label="Разделы редактора"><a href="#messageComposer" aria-current="location">Написать</a><a href="#sentMessages">Сообщения</a><a href="#activityPanel">Ответы</a></nav>
+    <div class="editor-layout"><div class="editor-main"><section id="messageComposer"></section><section id="sentMessages" aria-live="polite"></section></div>
+    <aside class="editor-aside"><details id="deviceConnection"><summary>Подключить Наташу <span class="bi-icon bi-arrow-right" aria-hidden="true"></span></summary><p>Создай одноразовый код. Наташа введёт его в своём приложении.</p><button id="createConnection" type="button">Создать код</button><div id="connectionResult" hidden><label for="connectionCode">Код подключения</label><textarea id="connectionCode" rows="1" readonly></textarea><button id="copyConnection" type="button">Скопировать код</button><details class="link-details"><summary>Подключение по ссылке</summary><label class="sr-only" for="connectionLink">Ссылка подключения</label><textarea id="connectionLink" rows="3" readonly></textarea><button id="copyConnectionLink" type="button">Скопировать ссылку</button></details></div><p id="connectionStatus" role="status"></p></details>
+    <section id="activityPanel"><p class="eyebrow">С её телефона</p><h2>Ответы Наташи</h2><small id="dashboardStatus"></small><p id="dashboardEmpty" class="empty-state">Когда Наташа откроет письмо или ответит, ты увидишь это здесь.</p><details><summary>Последние ответы</summary><section id="dashboardState"></section></details><details><summary>Все действия</summary><section id="dashboardEvents"></section></details></section></aside></div>
+  </main>
+  <dialog id="messagePreview" class="preview-sheet" aria-labelledby="previewTitle"><button id="closePreview" class="icon-button" type="button" aria-label="Закрыть предпросмотр"><span class="bi-icon bi-x-lg" aria-hidden="true"></span></button><p class="eyebrow">Так она увидит сообщение</p><div id="previewBody"></div><p class="field-hint">Это предпросмотр. Сообщение ещё не отправлено.</p></dialog>
+  <script src="./sync.js?v=20261009-design1" defer></script>
+  <script src="./content.js?v=20261009-design1"></script>
+  <script src="./messages.js?v=20261009-design1" defer></script>
+  <script src="./app.js?v=20261009-design1" defer></script>
 </body>
 </html>

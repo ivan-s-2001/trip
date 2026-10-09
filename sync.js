@@ -51,7 +51,7 @@ const TripSync=(()=>{
  async function createRoom(){
   const ownerKey=localStorage.getItem('trip-setup-key')||key();localStorage.setItem('trip-setup-key',ownerKey);
   await call('/api/setup',{method:'POST',body:JSON.stringify({token:ownerKey})});
-  await login(ownerKey);localStorage.removeItem('trip-setup-key');
+  await login(ownerKey);document.getElementById('deviceConnection').open=true;localStorage.removeItem('trip-setup-key');
  }
  async function restore(){
   try{const result=await call('/api/state');const pending=new Set(queue().map(e=>e.key));for(const item of result.state)if(!pending.has(item.key))localStorage.setItem(item.key,item.value);}catch(_){}
@@ -78,7 +78,7 @@ const TripSync=(()=>{
  async function setup(){
   if(new URLSearchParams(location.search).get('qa')==='1')return;
   const $=id=>document.getElementById(id),expected=window.TripNative?.getAppRole?.()||new URLSearchParams(location.search).get('app');
-  $('ownerSetup').hidden=expected==='wife';
+  $('ownerSetup').hidden=expected==='wife'||Boolean(role);$('connectForm').hidden=expected==='husband'||role==='husband';
   $('connectButton').addEventListener('click',()=>$('connectSheet').showModal());
   $('connectClose').addEventListener('click',()=>$('connectSheet').close());
   $('createRoom').addEventListener('click',async e=>{e.currentTarget.disabled=true;try{await createRoom();$('connectError').textContent='';}catch(_){$('connectError').textContent='Не удалось создать наше место. Проверь интернет и попробуй ещё раз.';}finally{e.currentTarget.disabled=false;}});
@@ -92,8 +92,9 @@ const TripSync=(()=>{
   }catch(_){$('connectionStatus').textContent='Не удалось создать код. Проверь интернет и попробуй ещё раз.';}finally{button.disabled=false;}});
   for(const [button,field]of [['copyConnection','connectionCode'],['copyConnectionLink','connectionLink']])$(button).addEventListener('click',async()=>{const input=$(field);try{await navigator.clipboard.writeText(input.value);$('connectionStatus').textContent='Скопировано.';}catch(_){input.focus();input.select();$('connectionStatus').textContent='Выделено — скопируй текст.';}});
   $('dashboardRefresh').addEventListener('click',refreshDashboard);
+  for(const link of document.querySelectorAll?.('.editor-nav a')||[])link.addEventListener('click',()=>{for(const other of document.querySelectorAll('.editor-nav a'))other.removeAttribute('aria-current');link.setAttribute('aria-current','location');});
   $('dashboardLogout').textContent='Подключение';
-  $('dashboardLogout').addEventListener('click',()=>$('connectSheet').showModal());
+  $('dashboardLogout').addEventListener('click',()=>{const connection=$('deviceConnection');connection.open=true;connection.scrollIntoView({block:'start',behavior:'smooth'});});
   const params=new URLSearchParams(location.hash.slice(1)),incoming=params.get('pair')||params.get('access');
   if(incoming)history.replaceState(null,'',location.pathname+location.search);
   if(role==='husband')openDashboard();
