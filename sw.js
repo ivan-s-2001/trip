@@ -1,4 +1,4 @@
-const CACHE = "trip-v20";
+const CACHE = "trip-v21";
 
 const CORE = [
   "./",
@@ -78,7 +78,7 @@ self.addEventListener("fetch", event => {
   if (url.origin !== self.location.origin) return;
 
   const isNavigation = event.request.mode === "navigate";
-  const isAppShell = /\/(index\.html|styles\.css|content\.js|sync\.js|app\.js|manifest\.webmanifest)$/.test(url.pathname);
+  const isAppShell = /\/(index\.html|styles\.css|content\.js|sync\.js|messages\.js|app\.js|manifest\.webmanifest)$/.test(url.pathname);
 
   if (isNavigation || isAppShell) {
     event.respondWith(
