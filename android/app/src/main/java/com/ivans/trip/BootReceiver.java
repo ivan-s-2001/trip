@@ -15,7 +15,7 @@ public class BootReceiver extends BroadcastReceiver {
             MessageService.startIfReady(context);
             NotificationScheduler.ensureChannels(context);
             NotificationScheduler.scheduleAll(context);
-            GeofenceManager.registerAll(context);
+            GeofenceManager.invalidate(context);GeofenceManager.registerAll(context);
         }
     }
 }

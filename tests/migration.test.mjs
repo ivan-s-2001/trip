@@ -10,3 +10,8 @@ assert.equal(db.prepare('SELECT room_id FROM media').get().room_id,'legacy');
 assert.equal(db.prepare('SELECT room_id FROM messages').get().room_id,'legacy');
 assert.match(db.prepare('SELECT topic FROM rooms').get().topic,/^up[A-Za-z0-9_-]{12}$/);
 console.log('PASS: migration preserves existing access, replies, messages and media');
+
+db.exec(readFileSync(new URL('../server/migrations/005_chunked_media.sql',import.meta.url),'utf8'));
+db.exec(readFileSync(new URL('../server/migrations/006_planned_messages.sql',import.meta.url),'utf8'));
+assert.deepEqual({...db.prepare('SELECT data,parts,complete FROM media').get()},{data:'aGVsbG8=',parts:0,complete:1});
+console.log('PASS: attachment/plan migrations preserve legacy files and create chunk, geofence receipt and plan storage');

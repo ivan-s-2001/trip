@@ -16,6 +16,9 @@ public final class TripCloud {
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
     private static final Object LOCK = new Object();
     private static SharedPreferences prefs(Context context) { return context.getSharedPreferences("trip_cloud", Context.MODE_PRIVATE); }
+    public static String hash(String value) throws java.security.NoSuchAlgorithmException {
+        byte[] bytes=java.security.MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));StringBuilder out=new StringBuilder();for(byte b:bytes)out.append(String.format(java.util.Locale.ROOT,"%02x",b&255));return out.toString();
+    }
     public static boolean isHusband(Context context) { return BuildConfig.HUSBAND_APP || "husband".equals(prefs(context).getString("role", "")); }
     public static String getAccess(Context context) { return prefs(context).getString("token", ""); }
     public static String getPushTopic(Context context) { return prefs(context).getString("push_topic", ""); }
@@ -26,7 +29,7 @@ public final class TripCloud {
         MessageService.reconnect(context);
     }
     public static void setAccess(Context context, String token, String role) {
-        if(!token.equals(getAccess(context))) prefs(context).edit().remove("push_topic").apply();
+        if(!token.equals(getAccess(context))){prefs(context).edit().remove("push_topic").remove("queue").apply();context.getSharedPreferences(GeofenceManager.PREFS,Context.MODE_PRIVATE).edit().remove("points").remove("registered-points").apply();GeofenceManager.unregister(context);}
         prefs(context).edit().putString("token", token).putString("role", role).apply();
         if("husband".equals(role)) GeofenceManager.unregister(context);
         MessageService.startIfReady(context);

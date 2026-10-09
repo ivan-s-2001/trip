@@ -81,6 +81,9 @@ public final class MessageService extends Service {
    try{Thread.sleep(Math.min(30000,1000L<<Math.min(failures++,5)));}catch(InterruptedException e){Thread.currentThread().interrupt();return;}
   }
  }
+ private void syncGeofences(){
+  HttpURLConnection config=null;try{config=(HttpURLConnection)new URL("https://trip-private.ivan-s-2001.workers.dev/api/geofences").openConnection();config.setConnectTimeout(8000);config.setReadTimeout(8000);config.setRequestProperty("Authorization","Bearer "+TripCloud.getAccess(this));if(config.getResponseCode()==200)GeofenceManager.configure(this,new JSONObject(readJson(config)).getJSONArray("points").toString());}catch(Exception ignored){}finally{if(config!=null)config.disconnect();}
+ }
  private synchronized void check(){
   if(TripCloud.isHusband(this)||TripCloud.getAccess(this).isEmpty()){stopSelf();return;}
   HttpURLConnection connection=null;
@@ -97,6 +100,7 @@ public final class MessageService extends Service {
     n.setSmallIcon(R.drawable.ic_heart_notification).setContentTitle("От Вани ♥").setContentText(message.getString("title")).setContentIntent(content).setAutoCancel(true);
     ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).notify(notificationId,n.build());prefs.edit().putBoolean(id,true).commit();
    }
+   syncGeofences();
   }catch(Exception ignored){}finally{if(connection!=null)connection.disconnect();}
  }
  @Override public int onStartCommand(Intent intent,int flags,int startId){

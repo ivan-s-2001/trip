@@ -32,6 +32,9 @@ public class GeofenceReceiver extends BroadcastReceiver {
 
         for (Geofence fence : fences) {
             String zone = fence.getRequestId();
+            if(zone.matches("geo_[a-f0-9]{20}")){
+                try{org.json.JSONObject value=new org.json.JSONObject();value.put("zone",zone);value.put("transition",transition==Geofence.GEOFENCE_TRANSITION_ENTER?"enter":"exit");TripCloud.record(context,"trip-geo",value.toString());}catch(Exception ignored){}continue;
+            }
             String previous = prefs.getString(GeofenceManager.KEY_ZONE, "");
 
             if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {

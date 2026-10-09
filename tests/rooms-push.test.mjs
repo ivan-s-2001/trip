@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import worker from '../server/worker.mjs';
+import plans from '../server/plans.mjs';
 import {makeEnv} from './test-db.mjs';
 const {env,db}=makeEnv();
 const digest=x=>createHash('sha256').update(x).digest('hex');
@@ -28,7 +29,7 @@ const result=await json(await request('messages',owner,content));await Promise.a
 assert.equal(delivered.length,1);assert.equal(delivered[0].options.body,'sync');assert.ok(!JSON.stringify(delivered).includes(content.title));
 assert.equal(delivered[0].options.headers.Cache,'no');
 assert.equal((await json(await request('messages',recipient))).messages[0].id,result.id);
-assert.equal((await json(await request('messages',other))).messages.length,0);
+assert.equal((await json(await request('messages',other))).messages.length,plans.length);
 assert.equal((await request('media/'+photo.id,other)).status,404);
 assert.equal((await request('messages',other,{...content,requestId:crypto.randomUUID()})).status,400);
 assert.equal((await request('messages',recipient,content)).status,403);

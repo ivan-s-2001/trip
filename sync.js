@@ -56,7 +56,7 @@ const TripSync=(()=>{
  async function restore(){
   try{const result=await call('/api/state');const pending=new Set(queue().map(e=>e.key));for(const item of result.state)if(!pending.has(item.key))localStorage.setItem(item.key,item.value);}catch(_){}
  }
- const labels={'trip-hug-seconds':'Секунд объятия при встрече','trip-kiss-11':'Поцелуй в ответ','trip-hugs':'Объятия','trip-evening-coupon':'Вечер вместе','trip-home-arrived':'Дома','trip-last-moment':'Открытая записка','trip-zone':'Этап маршрута'};
+ const labels={'trip-hug-seconds':'Секунд объятия при встрече','trip-kiss-11':'Поцелуй в ответ','trip-hugs':'Объятия','trip-evening-coupon':'Вечер вместе','trip-home-arrived':'Дома','trip-last-moment':'Открытая записка','trip-zone':'Этап маршрута','trip-geo-ready':'Геолокация','trip-geo':'Переход маршрута'};
  function describe(item){
   const m=item.key.match(/^trip-(choice|care|keepsake)-(\d+)-(\d+)$/);
   let title=labels[item.key]||'Прослушивание',value=item.value;
@@ -64,6 +64,8 @@ const TripSync=(()=>{
   if(item.key.startsWith('trip-message-'))title='Ответ на твоё сообщение';
   if(item.key==='trip-last-moment'){try{const v=JSON.parse(value);value=window.TRIP_CONTENT.days[v.day]?.[v.index]?.title||value;}catch(_){}}
   if(item.key==='trip-zone')value=({rybinsk:'Рыбинск',svo:'Шереметьево',tjm:'Рощино',kurgan:'Курган',between:'В дороге'})[value]||value;
+  if(item.key==='trip-geo-ready')value=value==='1'?'Разрешена в фоне':'Нужно разрешение на телефоне';
+  if(item.key==='trip-geo'){try{const g=JSON.parse(value);value=g.transition==='enter'?'Приезд в точку':'Отъезд от точки';}catch(_){}}
   if(item.key==='trip-home-arrived'||item.key==='trip-evening-coupon')value=value==='1'?'Да':value;
   if(item.key.startsWith('trip-audio-'))value=`${Math.floor(Number(value)||0)} секунд`;
   return {title,value};
@@ -80,6 +82,7 @@ const TripSync=(()=>{
   const $=id=>document.getElementById(id),expected=window.TripNative?.getAppRole?.()||new URLSearchParams(location.search).get('app');
   $('ownerSetup').hidden=expected==='wife'||Boolean(role);$('connectForm').hidden=expected==='husband'||role==='husband';
   $('connectButton').addEventListener('click',()=>$('connectSheet').showModal());
+  const geoUI=()=>{if(!$('geoSettings'))return;$('geoSettings').hidden=!(role==='wife'&&window.TripNative?.enableGeolocation);if(!$('geoSettings').hidden)$('geoStatus').textContent=window.TripNative.hasBackgroundLocation?.()?'Геолокация разрешена.':'Проверь разрешения для писем по маршруту.';};geoUI();window.addEventListener('trip-connected',geoUI);window.addEventListener('focus',geoUI);$('enableGeo')?.addEventListener('click',()=>window.TripNative.enableGeolocation());
   $('connectClose').addEventListener('click',()=>$('connectSheet').close());
   $('createRoom').addEventListener('click',async e=>{e.currentTarget.disabled=true;try{await createRoom();$('connectError').textContent='';}catch(_){$('connectError').textContent='Не удалось создать наше место. Проверь интернет и попробуй ещё раз.';}finally{e.currentTarget.disabled=false;}});
   $('connectForm').addEventListener('submit',async e=>{e.preventDefault();try{await login($('accessCode').value);$('connectError').textContent='';}catch(error){$('connectError').textContent=error.message==='wrong-role'?'Это подключение для другого приложения.':'Не удалось подключиться. Код действует 15 минут — создай новый в редакторе и проверь интернет.';}});
