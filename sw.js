@@ -79,21 +79,14 @@ self.addEventListener("fetch", event => {
   if (url.origin !== self.location.origin) return;
 
   const isNavigation = event.request.mode === "navigate";
-  const isAppShell = /\/(index\.html|styles\.css|content\.js|sync\.js|messages\.js|app\.js|manifest\.webmanifest)$/.test(url.pathname);
+  const isAppShell = /\/(index\.html|styles\.css|content\.js|sync\.js|messages\.js|attachments\.js|app\.js|manifest\.webmanifest)$/.test(url.pathname);
 
   if (isNavigation || isAppShell) {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(async () => {
-          const hit = await caches.match(event.request);
-          return hit || caches.match("./index.html");
-        })
-    );
+    event.respondWith((async()=>{
+      const cache=await caches.open(CACHE);
+      try{const response=await fetch(event.request);if(response.ok){await cache.put(event.request,response.clone());return response;}const hit=await cache.match(event.request,{ignoreSearch:true});if(hit)return hit;return response;}
+      catch(_){const hit=await cache.match(event.request,{ignoreSearch:true});if(hit)return hit;if(isNavigation){const home=await cache.match('./index.html');if(home)return home;}return new Response('',{status:504,statusText:'Offline'});}
+    })());
     return;
   }
 

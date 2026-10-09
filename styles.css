@@ -726,3 +726,5 @@ details[open]>summary::after{content:'−'}
 #messageComposer,#plannedMessages,#sentMessages,#activityPanel{scroll-margin-top:88px}@media(max-width:760px){.editor-nav{display:grid;grid-template-columns:1fr 1fr;overflow:visible}.editor-nav a{white-space:normal}#messageComposer,#plannedMessages,#sentMessages,#activityPanel{scroll-margin-top:126px}}
 
 #geoSettings p{font-size:14px;line-height:1.65}#geoSettings button{margin:8px 0;width:100%}.inbox-toolbar{flex-wrap:wrap}.inbox-toolbar #inboxRefresh{margin-left:auto;min-width:48px;padding:8px}#inboxConnection{min-width:0;max-width:100%;overflow-wrap:anywhere}.inbox-toolbar #inboxRefresh:disabled{opacity:.4}
+
+.inbox-toolbar #inboxRefresh{width:auto;padding:8px 10px;font-size:12px}
