@@ -147,37 +147,25 @@ public final class NotificationScheduler {
     }
 
     public static void scheduleAll(Context context) {
-        for (int day = 10; day <= 17; day++) {
-            int dayIndex = day - 10;
-            for (int slot = 0; slot < 8; slot++) {
-                // Финальный «Домой» не планируем по часам: он открывается только после
-                // фактического возвращения в Рыбинск через кнопку «я уже дома».
-                // Arrival is a location event, never an assumption based on the timetable.
-                if ((day == 11 && slot == 0) || (day == 17 && (slot == 1 || slot == 7))) {
-                    cancelMoment(context, day, slot);
-                    continue;
-                }
-
-                int hour = TIMES[dayIndex][slot * 2];
-                int minute = TIMES[dayIndex][slot * 2 + 1];
-                String zone = zoneFor(day, slot);
-                long when = atZoneTime(day, hour, minute, zone);
-
-                String title = TITLES[dayIndex][slot];
-                String teaser = teaserFor(day, slot);
-
-                scheduleIfFuture(
-                        context,
-                        6000 + day * 10 + slot,
-                        when,
-                        CHANNEL_TRIP,
-                        title,
-                        teaser,
-                        "home",
-                        "day-" + day + "-" + slot
-                );
+        try {
+            String json;
+            try(java.io.InputStream input=context.getAssets().open("www/moments.json")){
+                java.io.ByteArrayOutputStream output=new java.io.ByteArrayOutputStream();byte[] buffer=new byte[4096];int n;
+                while((n=input.read(buffer))!=-1)output.write(buffer,0,n);
+                json=output.toString("UTF-8");
             }
-        }
+            org.json.JSONObject days=new org.json.JSONObject(json);
+            for(int day=10;day<=17;day++){
+                org.json.JSONArray items=days.getJSONArray(String.valueOf(day));
+                for(int slot=0;slot<8;slot++)cancelMoment(context,day,slot);
+                for(int slot=0;slot<items.length();slot++){
+                    org.json.JSONObject item=items.getJSONObject(slot);
+                    if(item.has("trigger")||item.has("conditional"))continue;
+                    String[] time=item.getString("time").split(":");
+                    scheduleIfFuture(context,6000+day*10+slot,atZoneTime(day,Integer.parseInt(time[0]),Integer.parseInt(time[1]),zoneFor(day,slot)),CHANNEL_TRIP,item.getString("title"),item.optString("push","Для тебя открылся новый момент ♥"),"home","day-"+day+"-"+slot);
+                }
+            }
+        } catch(Exception ignored) {}
     }
 
     private static void cancelMoment(Context context, int day, int slot) {

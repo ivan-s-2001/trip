@@ -22,7 +22,7 @@ public class NotificationReceiver extends BroadcastReceiver {
         String screen = intent.getStringExtra("screen");
         String surprise = intent.getStringExtra("surprise");
 
-        if (shouldSuppressTimedDuplicate(context, surprise)) return;
+        if (!intent.getBooleanExtra("geo",false) && shouldSuppressTimedDuplicate(context, surprise)) return;
 
         if (channel == null) channel = NotificationScheduler.CHANNEL_LOVE;
         if (title == null) title = "От мужа ♥";

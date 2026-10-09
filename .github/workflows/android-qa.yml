@@ -11,6 +11,7 @@ on:
       - "app.js"
       - "sync.js"
       - "content.js"
+      - "moments.json"
       - "sw.js"
       - "manifest.webmanifest"
       - "assets/**"
@@ -52,13 +53,13 @@ jobs:
       - name: Prepare QA APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/qa/app-qa.apk dist/Trip-QA-2.0.0.apk
+          cp android/app/build/outputs/apk/qa/app-qa.apk dist/Trip-QA-2.0.1.apk
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Trip-QA-2.0.0
-          path: dist/Trip-QA-2.0.0.apk
+          name: Trip-QA-2.0.1
+          path: dist/Trip-QA-2.0.1.apk
 
       - name: Publish rolling QA release
         env:
@@ -71,4 +72,4 @@ jobs:
           else
             gh release create qa-latest --title "Trip QA" --notes "Тестовая сборка Trip: симуляция дат 10–17 октября, дорожные состояния, открытие контента и тестовые push/deep links."
           fi
-          gh release upload qa-latest dist/Trip-QA-2.0.0.apk --clobber
+          gh release upload qa-latest dist/Trip-QA-2.0.1.apk --clobber

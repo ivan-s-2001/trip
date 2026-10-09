@@ -35,7 +35,7 @@ public class GeofenceReceiver extends BroadcastReceiver {
             String previous = prefs.getString(GeofenceManager.KEY_ZONE, "");
 
             if (transition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-                prefs.edit().putString(GeofenceManager.KEY_ZONE, zone).apply();
+                prefs.edit().putString(GeofenceManager.KEY_ZONE, zone).putBoolean("milestone-"+zone,true).apply();
                 if(!zone.equals(previous)) TripCloud.record(context, "trip-zone", zone);
 
                 if ("rybinsk".equals(zone) && isReturnWindow()) {
@@ -51,7 +51,10 @@ public class GeofenceReceiver extends BroadcastReceiver {
                     prefs.edit().putString(GeofenceManager.KEY_ZONE, "between").apply();
                     TripCloud.record(context, "trip-zone", "between");
                 }
-                if(zone.equals(previous)) notifyTransition(context, zone, false);
+                if(zone.equals(previous)){
+                    if("rybinsk".equals(zone))prefs.edit().putBoolean("milestone-departure",true).apply();
+                    notifyTransition(context, zone, false);
+                }
             }
         }
         TripCloud.flush(context, goAsync());
@@ -92,8 +95,8 @@ public class GeofenceReceiver extends BroadcastReceiver {
             }
         } else {
             if ("rybinsk".equals(zone) && day == 10) {
-                title = "Поездка началась";
-                text = "Рыбинск остаётся позади. Береги себя в дороге ♥";
+                title = "Тучка моя";
+                text = "Я тут сделал для тебя одну штучку ♥";
             } else if ("kurgan".equals(zone) && (day == 16 || day == 17)) {
                 title = "Домой";
                 text = "Курган остаётся позади. Теперь каждый следующий этап — к Рыбинску.";
@@ -117,6 +120,10 @@ public class GeofenceReceiver extends BroadcastReceiver {
         notification.putExtra("title", title);
         notification.putExtra("text", text);
         notification.putExtra("screen", "home");
+        notification.putExtra("geo",true);
+        if(!entered && "rybinsk".equals(zone))notification.putExtra("surprise","day-10-0");
+        if(entered && "tjm".equals(zone) && day==11)notification.putExtra("surprise","day-11-0");
+        if(entered && "kurgan".equals(zone))notification.putExtra("surprise","day-11-1");
         if (entered && "rybinsk".equals(zone)) notification.putExtra("surprise", "day-17-7");
         context.sendBroadcast(notification);
     }

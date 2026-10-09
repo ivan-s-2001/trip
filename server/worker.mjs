@@ -1,4 +1,4 @@
-const allowedKey=/^trip-(choice-\d+-\d+|care-\d+-\d+|keepsake-\d+-\d+|evening-coupon|hugs|home-arrived|last-moment|audio-[a-z0-9.-]+|zone)$/;
+const allowedKey=/^trip-(choice-\d+-\d+|care-\d+-\d+|keepsake-\d+-\d+|evening-coupon|hugs|hug-seconds|kiss-11|home-arrived|last-moment|audio-[a-z0-9.-]+|zone)$/;
 export default {
  async fetch(request,env){
   const url=new URL(request.url),origin=request.headers.get('Origin');

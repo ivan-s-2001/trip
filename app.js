@@ -95,6 +95,7 @@ function zoneFromCoords(lat,lon){
 }
 
 function refreshForegroundLocation(){
+  if(qa())return;
   if(window.TripNative) return;
   if(!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(
@@ -158,33 +159,43 @@ function minutes(value){
 function unlocked(day,date=now()){
   const items=CONTENT.days[day]||[];
   if(!items.length) return -1;
-  if(qa() && localStorage.getItem("trip-qa-unlock-all")==="1") return 7;
+  if(qa()) return items.length-1;
 
   const current=dayNumber(date);
   if(current===null){
     if(date<T.tripStart) return -1;
-    if(date>T.backArr) return day===17 ? (localStorage.getItem("trip-home-arrived")==="1"?7:6) : 7;
+    if(date>T.backArr) return day===17 ? (localStorage.getItem("trip-home-arrived")==="1"?items.length-1:items.length-2) : items.length-1;
     return -1;
   }
-  if(current>day) return 7;
+  if(current>day) return items.length-1;
   if(current<day) return -1;
 
   const cur=tripClock(date).minutes;
   let last=-1;
-  items.forEach((item,i)=>{if(minutes(item.time)<=cur) last=i;});
+  items.forEach((item,i)=>{if(item.trigger ? milestone(item.trigger) : (day!==11||milestone("kurgan"))&&minutes(item.time)<=cur) last=i;});
   if(day===17 && localStorage.getItem("trip-home-arrived")!=="1") last=Math.min(last,6);
   return last;
+}
+
+function milestone(id){
+  try{if(window.TripNative?.hasMilestone?.(id))return true;}catch(_){}
+  return localStorage.getItem(`trip-milestone-${id}`)==="1";
 }
 
 function phase(date=now()){
   const zone=activeZone();
   if(zone && localStorage.getItem("trip-zone")!==zone) saveShared("trip-zone",zone);
+  if(date>=T.tripStart && date<T.backDep){
+    if(["svo","tjm","kurgan"].includes(zone))localStorage.setItem("trip-milestone-departure","1");
+    if(zone==="tjm"||zone==="kurgan")localStorage.setItem("trip-milestone-tjm","1");
+    if(zone==="kurgan")localStorage.setItem("trip-milestone-kurgan","1");
+  }
 
   if(nativeHome()){
     if(localStorage.getItem("trip-home-arrived")!=="1") saveShared("trip-home-arrived","1");
   }
 
-  if(date<T.tripStart){
+  if(date<T.tripStart || (!qa() && !milestone("departure"))){
     return {
       mode:"before", date:"10—17 октября", status:"Рыбинск → Курган",
       from:"Рыбинск",to:"Курган",
@@ -361,7 +372,8 @@ function renderBefore(){
   $("media").innerHTML="";
   $("kicker").textContent="до поездки";
   $("title").textContent="Пока ты ещё дома";
-  $("text").textContent="Пока ты рядом — обниму по-настоящему. В дороге здесь буду я. А дома мы с котами будем ждать тебя.";
+  $("title").textContent="До встречи";
+  $("text").textContent="";
   $("action").innerHTML="";
   $("qaPrompt").hidden=!qa();
   $("qaPrompt").textContent="До 10 октября здесь должна быть одна короткая твоя фраза. Без отдельного экрана подготовки.";
@@ -424,6 +436,8 @@ function rememberMoment(){
 function renderMoment(){
   const item=CONTENT.days[view.day]?.[view.index];
   if(!item) return;
+  $("sceneDate").textContent=dayLabel(view.day);
+  $("sceneStatus").textContent=qa()?"Предпросмотр поездки":phase().status;
 
   const key=`${view.day}-${view.index}`;
   if(renderedMoment===key){$("scene").dataset.mode=rememberedMode;renderNavigation();renderNextMoment(view.day,view.index);return;}
@@ -468,9 +482,16 @@ function renderMedia(item,locked){
   const mount=$("media");
   mount.innerHTML="";
   mount.hidden=true;
-  if(locked||item.type!=="photo") return;
+  if(locked||!["photo","gift-photo"].includes(item.type)) return;
+  if(item.type==="gift-photo" && localStorage.getItem(`trip-opened-${item.id}`)!=="1") return;
 
-  const file=Array.isArray(item.media)?item.media[0]:item.media;
+  if(Array.isArray(item.media)){
+    mount.hidden=false;mount.classList.add("gallery-media");
+    mount.innerHTML=`<div class="photo-gallery">${item.media.map(file=>`<img src="./assets/photos/${file}" alt="Фотография" tabindex="0">`).join("")}</div>`;
+    mount.querySelectorAll("img").forEach(image=>image.addEventListener("click",()=>openPhoto(image)));return;
+  }
+  mount.classList.remove("gallery-media");
+  const file=item.media;
   if(!file) return;
 
   mount.hidden=false;
@@ -484,6 +505,22 @@ function renderAction(item,locked){
   mount.innerHTML="";
   if(locked) return;
 
+  if(item.type==="gift-photo" || (item.type==="gift" && item.id===4)){
+    if(localStorage.getItem(`trip-opened-${item.id}`)==="1")return;
+    $("text").textContent="";
+    mount.innerHTML='<button class="hold-button gift-hold" id="openGift" type="button"><span class="hold-ring"><span class="bi-icon bi-heart-fill" aria-hidden="true"></span></span><span><strong>Открыть подарок</strong><br><small>удерживай две секунды</small></span></button>';
+    setupHold($("openGift"),()=>{localStorage.setItem(`trip-opened-${item.id}`,"1");renderedMoment="";renderMoment();});return;
+  }
+  if(item.type==="hug-seconds"){
+    const key="trip-hug-seconds";
+    const label=()=>{const t=Number(localStorage.getItem(key)||0);return t<60?`Обнимемся на ${t} сек.`:`Обнимемся на ${Math.floor(t/60)} мин ${t%60} сек.`};
+    mount.innerHTML=`<button class="primary" id="hugSecond" type="button">Ещё секундочку ♥</button><p id="hugDuration" class="hug-duration"></p>`;
+    $("hugDuration").textContent=label();$("hugSecond").addEventListener("click",()=>{saveShared(key,Number(localStorage.getItem(key)||0)+1);$("hugDuration").textContent=label();navigator.vibrate?.(15);});return;
+  }
+  if(item.type==="letter-kiss"){
+    mount.innerHTML='<button class="primary" id="kissReply" type="button">Целую в ответ ♥</button>';
+    $("kissReply").addEventListener("click",()=>{saveShared("trip-kiss-11",String(Number(localStorage.getItem("trip-kiss-11")||0)+1));toast("Целую ♥");});return;
+  }
   if(item.type==="hug"){
     mount.innerHTML=`<button class="hold-button" id="momentHug" type="button"><span class="hold-ring"><span class="bi-icon bi-heart-fill" aria-hidden="true"></span></span><span><strong>Обнять меня</strong><br><small>удерживай две секунды</small></span></button>`;
     setupHold($("momentHug"));
@@ -632,13 +669,20 @@ function sync(){
 function move(delta){
   if(!view.day) return;
   const target=view.index+delta;
-  if(target<0||target>7) return;
+  if(qa()){
+    const days=Object.keys(CONTENT.days).map(Number),pos=days.indexOf(view.day);
+    let day=view.day,index=target;
+    if(target<0){if(pos===0)return;day=days[pos-1];index=CONTENT.days[day].length-1;}
+    if(target>=CONTENT.days[day].length){if(pos===days.length-1)return;day=days[pos+1];index=0;}
+    setMoment(day,index,{forced:true});return;
+  }
+  if(target<0||target>=CONTENT.days[view.day].length) return;
   const last=unlocked(view.day);
   if(!qa() && target>last) return;
   setMoment(view.day,target,{forced:true});
 }
 
-function setupHold(button){
+function setupHold(button,onComplete=hug){
   let frame=0,start=0,holding=false;
   const ring=button.querySelector(".hold-ring");
   function cancel(){holding=false;holdingNow=false;cancelAnimationFrame(frame);ring.style.setProperty("--hold",0);$("scene").style.setProperty("--embrace",0);button.classList.remove("is-holding");}
@@ -647,7 +691,7 @@ function setupHold(button){
     const progress=Math.min(1,(time-start)/2000);
     ring.style.setProperty("--hold",progress);
     $("scene").style.setProperty("--embrace",progress);
-    if(progress===1){cancel();hug();button.querySelector("small").textContent="Я рядом. Можно обнять ещё раз";}
+    if(progress===1){cancel();onComplete();const hint=button.querySelector("small");if(hint)hint.textContent="Я рядом. Можно обнять ещё раз";}
     else frame=requestAnimationFrame(tick);
   }
   function begin(){if(holding) return;holding=true;holdingNow=true;button.classList.add("is-holding");start=performance.now();frame=requestAnimationFrame(tick);}
@@ -660,8 +704,8 @@ function setupHold(button){
 function renderNavigation(){
   const nav=$("momentNav");
   nav.hidden=!view.day;
-  $("prevMoment").disabled=view.index===0;
-  $("nextMoment").disabled=view.index>=unlocked(view.day);
+  $("prevMoment").disabled=qa()?view.day===10&&view.index===0:view.index===0;
+  $("nextMoment").disabled=qa()?view.day===17&&view.index===CONTENT.days[17].length-1:view.index>=unlocked(view.day);
   $("newMoment").hidden=view.index>=unlocked(view.day);
   $("momentPosition").textContent=`${view.index+1} / ${CONTENT.days[view.day].length}`;
   $("homeConfirm").hidden=now()<T.backArr || localStorage.getItem("trip-home-arrived")==="1";
@@ -669,7 +713,7 @@ function renderNavigation(){
 
 function setupSwipe(){
   $("sceneMain").addEventListener("touchstart",e=>{
-    if(e.target.closest("button,audio,textarea,input")){swipeX=null;return;}
+    if(e.target.closest("button,audio,textarea,input,.photo-gallery")){swipeX=null;return;}
     const t=e.changedTouches[0];
     swipeX=t.clientX;swipeY=t.clientY;
   },{passive:true});
@@ -732,7 +776,7 @@ function openQa(){
   $("qaContent").innerHTML=`
     <span class="qa-badge">QA ONLY</span>
     <h2>Сцена</h2>
-    <div class="qa-note">Сейчас: <strong>${now().toLocaleString("ru-RU")}</strong><br>${day}.10 · ${index+1}/8</div>
+    <div class="qa-note">Сейчас: <strong>${now().toLocaleString("ru-RU")}</strong><br>${day}.10 · ${index+1}/${CONTENT.days[day].length}</div>
     <div class="qa-grid">
       ${[10,11,12,13,14,15,16,17].map(d=>`<button data-day="${d}" class="${d===day?"is-active":""}">${d}.10</button>`).join("")}
     </div>
@@ -794,12 +838,12 @@ function setup(){
   document.addEventListener("visibilitychange",()=>{if(!document.hidden){sync();refreshForegroundLocation();}});
   setupQa();
 
-  if(!handleIncoming()) sync();
+  if(!handleIncoming()){if(qa())setMoment(10,0,{forced:true});else sync();}
   refreshForegroundLocation();
 
   setInterval(()=>{
     if(holdingNow) return;
-    if(!view.forced || view.day!==dayNumber()) sync();
+    if(!view.forced || (!qa() && view.day!==dayNumber())) sync();
     else {renderPhase();if(view.day) renderMoment();}
   },30000);
 

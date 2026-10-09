@@ -19,7 +19,7 @@ const TripSync=(()=>{
  async function restore(){
   try{const result=await call('/api/state');const pending=new Set(queue().map(e=>e.key));for(const item of result.state)if(!pending.has(item.key))localStorage.setItem(item.key,item.value);}catch(_){}
  }
- const labels={'trip-hugs':'Объятия','trip-evening-coupon':'Вечер вместе','trip-home-arrived':'Дома','trip-last-moment':'Открытая записка','trip-zone':'Этап маршрута'};
+ const labels={'trip-hug-seconds':'Секунд объятия при встрече','trip-kiss-11':'Поцелуй в ответ','trip-hugs':'Объятия','trip-evening-coupon':'Вечер вместе','trip-home-arrived':'Дома','trip-last-moment':'Открытая записка','trip-zone':'Этап маршрута'};
  function describe(item){
   const m=item.key.match(/^trip-(choice|care|keepsake)-(\d+)-(\d+)$/);
   let title=labels[item.key]||'Прослушивание',value=item.value;
@@ -38,6 +38,7 @@ const TripSync=(()=>{
  }
  function openDashboard(){document.getElementById('husbandDashboard').hidden=false;document.getElementById('scene').hidden=true;refreshDashboard()}
  async function setup(){
+  if(new URLSearchParams(location.search).get("qa")==="1")return;
   document.getElementById('connectButton').addEventListener('click',()=>document.getElementById('connectSheet').showModal());
   document.getElementById('connectClose').addEventListener('click',()=>document.getElementById('connectSheet').close());
   document.getElementById('connectForm').addEventListener('submit',async e=>{e.preventDefault();try{await login(document.getElementById('accessCode').value);document.getElementById('connectError').textContent='';}catch(_){document.getElementById('connectError').textContent='Не удалось подключиться. Проверь код и интернет.'}});

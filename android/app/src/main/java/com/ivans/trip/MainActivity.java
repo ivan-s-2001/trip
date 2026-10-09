@@ -152,6 +152,9 @@ public class MainActivity extends Activity {
 
     private final class NativeBridge {
         @JavascriptInterface
+        public boolean hasMilestone(String id) { return getSharedPreferences(GeofenceManager.PREFS, MODE_PRIVATE).getBoolean("milestone-"+id,false); }
+
+        @JavascriptInterface
         public String getSyncAccess() { return TripCloud.getAccess(MainActivity.this); }
 
         @JavascriptInterface

@@ -1,4 +1,4 @@
-const CACHE = "trip-v17";
+const CACHE = "trip-v18";
 
 const CORE = [
   "./",
@@ -22,6 +22,13 @@ const CORE = [
 ];
 
 const OPTIONAL_MEDIA = [
+  "./assets/photos/intro-family.jpg",
+  "./assets/photos/home-01.jpg",
+  "./assets/photos/home-02.jpg",
+  "./assets/photos/home-03.jpg",
+  "./assets/photos/miss-you.jpg",
+  "./assets/audio/before-flight.m4a",
+  "./assets/audio/goodnight-12.m4a",
   "./assets/photos/day10-us.jpg",
   "./assets/photos/home-cats-01.jpg",
   "./assets/photos/home-cats-02.jpg",
