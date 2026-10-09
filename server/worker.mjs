@@ -12,6 +12,13 @@ export default {
    const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token)))].map(x=>x.toString(16).padStart(2,'0')).join('');
    const user=await env.DB.prepare('SELECT role FROM access WHERE hash=?').bind(hash).first();
    if(!user)return reply({error:'unauthorized'},401);
+   if(url.pathname==='/api/access' && request.method==='POST'){
+    if(user.role!=='husband')return reply({error:'forbidden'},403);
+    const token=[...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,'0')).join('');
+    const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token)))].map(x=>x.toString(16).padStart(2,'0')).join('');
+    await env.DB.prepare('INSERT INTO access(hash,role) VALUES(?,?)').bind(hash,'wife').run();
+    return reply({token,role:'wife'});
+   }
    if(url.pathname.startsWith('/api/media/') && request.method==='GET'){
     const row=await env.DB.prepare('SELECT mime,data FROM media WHERE id=?').bind(url.pathname.split('/').pop()).first();
     if(!row)return reply({error:'not-found'},404);

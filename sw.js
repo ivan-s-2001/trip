@@ -1,4 +1,4 @@
-const CACHE = "trip-v21";
+const CACHE = "trip-v22";
 
 const CORE = [
   "./",

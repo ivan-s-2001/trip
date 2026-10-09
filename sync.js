@@ -15,7 +15,7 @@ const TripSync=(()=>{
   catch(_){}finally{busy=false}
  }
  function save(key,value){localStorage.setItem(key,String(value));record(key,value)}
- async function login(value){token=value.trim();const result=await call('/api/me');const expected=window.TripNative?.getAppRole?.();if(expected&&result.role!==expected)throw Error('wrong-role');role=result.role;localStorage.setItem('trip-role',role);localStorage.setItem('trip-access',token);window.TripNative?.setSyncAccess?.(token,role);document.getElementById('connectSheet').close();if(role==='husband')openDashboard();else{await restore();flush();}}
+ async function login(value){const previous=token;const candidate=value.trim();try{token=candidate.includes('#')?new URLSearchParams(candidate.split('#')[1]).get('access')||'':candidate;const result=await call('/api/me');const expected=window.TripNative?.getAppRole?.();if(expected&&result.role!==expected)throw Error('wrong-role');role=result.role;localStorage.setItem('trip-role',role);localStorage.setItem('trip-access',token);window.TripNative?.setSyncAccess?.(token,role);document.getElementById('connectSheet').close();if(role==='husband')openDashboard();else{document.getElementById('scene').hidden=false;await restore();flush();}window.dispatchEvent(new Event('trip-connected'));}catch(error){token=previous;throw error;}}
  async function restore(){
   try{const result=await call('/api/state');const pending=new Set(queue().map(e=>e.key));for(const item of result.state)if(!pending.has(item.key))localStorage.setItem(item.key,item.value);}catch(_){}
  }
@@ -43,11 +43,13 @@ const TripSync=(()=>{
   document.getElementById('connectButton').addEventListener('click',()=>document.getElementById('connectSheet').showModal());
   document.getElementById('connectClose').addEventListener('click',()=>document.getElementById('connectSheet').close());
   document.getElementById('connectForm').addEventListener('submit',async e=>{e.preventDefault();try{await login(document.getElementById('accessCode').value);document.getElementById('connectError').textContent='';}catch(_){document.getElementById('connectError').textContent='Не удалось подключиться. Проверь код и интернет.'}});
+  document.getElementById('createConnection').addEventListener('click',async e=>{const button=e.currentTarget;button.disabled=true;const status=document.getElementById('connectionStatus');try{const result=await call('/api/access',{method:'POST'});document.getElementById('connectionCode').value=result.token;document.getElementById('connectionLink').value=`https://ivan-s-2001.github.io/trip/#access=${result.token}`;document.getElementById('connectionResult').hidden=false;status.textContent='Готово. Этот код подключает только её приложение. Уже подключённые телефоны продолжат работать.';}catch(_){status.textContent='Не удалось создать код. Проверь подключение и попробуй ещё раз.';}finally{button.disabled=false;}});
+  for(const [button,field]of [['copyConnection','connectionCode'],['copyConnectionLink','connectionLink']])document.getElementById(button).addEventListener('click',async()=>{const input=document.getElementById(field);try{await navigator.clipboard.writeText(input.value);document.getElementById('connectionStatus').textContent='Скопировано.';}catch(_){input.focus();input.select();document.getElementById('connectionStatus').textContent='Выделено — скопируй текст.';}});
   document.getElementById('dashboardRefresh').addEventListener('click',refreshDashboard);
   document.getElementById('dashboardLogout').addEventListener('click',()=>{localStorage.removeItem('trip-access');localStorage.removeItem('trip-role');window.TripNative?.setSyncAccess?.('','');location.hash='';location.reload()});
   const params=new URLSearchParams(location.hash.slice(1));const incoming=params.get('access');if(incoming){history.replaceState(null,'',location.pathname+location.search);token=incoming;}
-  if(window.TripNative?.getAppRole?.()){document.getElementById('scene').hidden=true;}
-  if(token){try{await login(token)}catch(_){document.getElementById('connectSheet').showModal()}}else if(window.TripNative?.getAppRole?.()){document.getElementById('connectSheet').showModal()}
+  if(token){try{await login(token)}catch(_){document.getElementById('connectError').textContent='Подключение пока недоступно. Проверь интернет или создай новый код в редакторе.'}}
+  if(!role&&window.TripNative?.getAppRole?.()==='husband')document.getElementById('connectSheet').showModal();
   window.addEventListener('online',flush);setInterval(()=>{if(role==='husband'&&!document.hidden)refreshDashboard();else flush()},15000);
  }
  document.addEventListener('DOMContentLoaded',setup);
