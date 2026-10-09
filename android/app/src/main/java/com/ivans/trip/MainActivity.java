@@ -63,10 +63,6 @@ public class MainActivity extends Activity {
 
         webView.addJavascriptInterface(new NativeBridge(), "TripNative");
 
-        if ("qa".equals(BuildConfig.BUILD_TYPE)) {
-            webView.addJavascriptInterface(new QaBridge(), "TripQA");
-        }
-
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -136,10 +132,7 @@ public class MainActivity extends Activity {
 
     private String urlFor(String screen, String surprise) {
         StringBuilder url = new StringBuilder(SITE_URL);
-        url.append("?native=1");
-        if ("qa".equals(BuildConfig.BUILD_TYPE)) {
-            url.append("&qa=1&inbox=1");
-        }
+        url.append("?native=1&app=").append(BuildConfig.HUSBAND_APP ? "husband" : "wife");
         if (surprise != null && !surprise.isEmpty()) {
             url.append("&surprise=").append(Uri.encode(surprise));
         }
@@ -151,9 +144,6 @@ public class MainActivity extends Activity {
 
     private String offlineUrlFor(String screen, String surprise) {
         StringBuilder url = new StringBuilder("file:///android_asset/www/index.html?native=1&offline=1");
-        if ("qa".equals(BuildConfig.BUILD_TYPE)) {
-            url.append("&qa=1&inbox=1");
-        }
         if (surprise != null && !surprise.isEmpty()) {
             url.append("&surprise=").append(Uri.encode(surprise));
         }
@@ -167,6 +157,8 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean hasMilestone(String id) { return getSharedPreferences(GeofenceManager.PREFS, MODE_PRIVATE).getBoolean("milestone-"+id,false); }
 
+        @JavascriptInterface
+        public String getAppRole() { return BuildConfig.HUSBAND_APP ? "husband" : "wife"; }
         @JavascriptInterface
         public String getSyncAccess() { return TripCloud.getAccess(MainActivity.this); }
 
@@ -186,20 +178,6 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public boolean hasBackgroundLocation() {
             return GeofenceManager.hasRequiredPermissions(MainActivity.this);
-        }
-    }
-
-    private final class QaBridge {
-        @JavascriptInterface
-        public void notify(String surprise) {
-            Intent test = new Intent(MainActivity.this, NotificationReceiver.class);
-            test.putExtra("notification_id", 9900 + Math.abs((surprise == null ? "qa" : surprise).hashCode() % 500));
-            test.putExtra("channel", NotificationScheduler.CHANNEL_TRIP);
-            test.putExtra("title", "QA · тест уведомления");
-            test.putExtra("text", "Нажми — проверим deep link и сюрприз.");
-            test.putExtra("screen", "home");
-            test.putExtra("surprise", surprise == null || surprise.isEmpty() ? "random-0" : surprise);
-            sendBroadcast(test);
         }
     }
 

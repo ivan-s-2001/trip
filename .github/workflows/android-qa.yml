@@ -1,4 +1,4 @@
-name: Build Android QA APK
+name: Build Vanya Android APK
 
 on:
   workflow_dispatch:
@@ -22,11 +22,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: android-qa-${{ github.ref }}
+  group: android-husband-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-qa:
+  build-husband:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -48,29 +48,29 @@ jobs:
           node --check app.js
           node --check content.js
 
-      - name: Build QA APK
-        run: gradle -p android :app:assembleQa --stacktrace
+      - name: Build Vanya APK
+        run: gradle -p android :app:assembleHusband --stacktrace
 
-      - name: Prepare QA APK
+      - name: Prepare Vanya APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/qa/app-qa.apk dist/Trip-QA-2.1.0.apk
+          cp android/app/build/outputs/apk/husband/app-husband.apk dist/Trip-Vanya-2.2.0.apk
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Trip-QA-2.1.0
-          path: dist/Trip-QA-2.1.0.apk
+          name: Trip-Vanya-2.2.0
+          path: dist/Trip-Vanya-2.2.0.apk
 
-      - name: Publish rolling QA release
+      - name: Publish husband release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          git tag -f qa-latest "$GITHUB_SHA"
-          git push -f origin qa-latest
-          if gh release view qa-latest >/dev/null 2>&1; then
-            gh release edit qa-latest --title "Trip QA" --notes "Тестовая сборка Trip: симуляция дат 10–17 октября, дорожные состояния, открытие контента и тестовые push/deep links."
+          git tag -f husband-latest "$GITHUB_SHA"
+          git push -f origin husband-latest
+          if gh release view husband-latest >/dev/null 2>&1; then
+            gh release edit husband-latest --title "Trip · Ваня" --notes "Приложение Вани: редактор сообщений, расписание и ответы Наташи."
           else
-            gh release create qa-latest --title "Trip QA" --notes "Тестовая сборка Trip: симуляция дат 10–17 октября, дорожные состояния, открытие контента и тестовые push/deep links."
+            gh release create husband-latest --title "Trip · Ваня" --notes "Приложение Вани: редактор сообщений, расписание и ответы Наташи."
           fi
-          gh release upload qa-latest dist/Trip-QA-2.1.0.apk --clobber
+          gh release upload husband-latest dist/Trip-Vanya-2.2.0.apk --clobber

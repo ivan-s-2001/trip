@@ -15,7 +15,7 @@ const TripSync=(()=>{
   catch(_){}finally{busy=false}
  }
  function save(key,value){localStorage.setItem(key,String(value));record(key,value)}
- async function login(value){token=value.trim();const result=await call('/api/me');role=result.role;localStorage.setItem('trip-role',role);localStorage.setItem('trip-access',token);window.TripNative?.setSyncAccess?.(token,role);document.getElementById('connectSheet').close();if(role==='husband')openDashboard();else{await restore();flush();}}
+ async function login(value){token=value.trim();const result=await call('/api/me');const expected=window.TripNative?.getAppRole?.();if(expected&&result.role!==expected)throw Error('wrong-role');role=result.role;localStorage.setItem('trip-role',role);localStorage.setItem('trip-access',token);window.TripNative?.setSyncAccess?.(token,role);document.getElementById('connectSheet').close();if(role==='husband')openDashboard();else{await restore();flush();}}
  async function restore(){
   try{const result=await call('/api/state');const pending=new Set(queue().map(e=>e.key));for(const item of result.state)if(!pending.has(item.key))localStorage.setItem(item.key,item.value);}catch(_){}
  }
@@ -46,7 +46,8 @@ const TripSync=(()=>{
   document.getElementById('dashboardRefresh').addEventListener('click',refreshDashboard);
   document.getElementById('dashboardLogout').addEventListener('click',()=>{localStorage.removeItem('trip-access');localStorage.removeItem('trip-role');window.TripNative?.setSyncAccess?.('','');location.hash='';location.reload()});
   const params=new URLSearchParams(location.hash.slice(1));const incoming=params.get('access');if(incoming){history.replaceState(null,'',location.pathname+location.search);token=incoming;}
-  if(token){try{await login(token)}catch(_){document.getElementById('connectSheet').showModal()}}
+  if(window.TripNative?.getAppRole?.()){document.getElementById('scene').hidden=true;}
+  if(token){try{await login(token)}catch(_){document.getElementById('connectSheet').showModal()}}else if(window.TripNative?.getAppRole?.()){document.getElementById('connectSheet').showModal()}
   window.addEventListener('online',flush);setInterval(()=>{if(role==='husband'&&!document.hidden)refreshDashboard();else flush()},15000);
  }
  document.addEventListener('DOMContentLoaded',setup);

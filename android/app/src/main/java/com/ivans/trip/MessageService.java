@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 public final class MessageService extends Service {
  private ScheduledExecutorService executor;
  public static void startIfReady(Context context){
-  if("qa".equals(BuildConfig.BUILD_TYPE)||TripCloud.isHusband(context)||TripCloud.getAccess(context).isEmpty()||!context.getSharedPreferences(GeofenceManager.PREFS,MODE_PRIVATE).getBoolean("milestone-departure",false))return;
+  if(TripCloud.isHusband(context)||TripCloud.getAccess(context).isEmpty())return;
   try{Intent intent=new Intent(context,MessageService.class);if(Build.VERSION.SDK_INT>=26)context.startForegroundService(intent);else context.startService(intent);}catch(Exception ignored){}
  }
  @Override public void onCreate(){super.onCreate();NotificationManager manager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);String channel="trip_connection";if(Build.VERSION.SDK_INT>=26)manager.createNotificationChannel(new NotificationChannel(channel,"Связь с Ваней",NotificationManager.IMPORTANCE_MIN));

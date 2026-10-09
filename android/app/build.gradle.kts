@@ -10,22 +10,26 @@ android {
         applicationId = "com.ivans.trip"
         minSdk = 24
         targetSdk = 35
-        versionCode = 16
-        versionName = "2.1.0"
+        versionCode = 17
+        versionName = "2.2.0"
     }
 
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
+            buildConfigField("boolean", "HUSBAND_APP", "false")
         }
-        create("qa") {
+        create("husband") {
             initWith(getByName("debug"))
-            applicationIdSuffix = ".qa"
-            versionNameSuffix = "-qa"
-            isDebuggable = true
+            applicationIdSuffix = ".husband"
+            versionNameSuffix = "-husband"
+            isDebuggable = false
+            buildConfigField("boolean", "HUSBAND_APP", "true")
+            resValue("string", "app_name", "Ваня · Наше место")
             matchingFallbacks += listOf("debug")
         }
         release {
+            buildConfigField("boolean", "HUSBAND_APP", "false")
             isMinifyEnabled = false
         }
     }

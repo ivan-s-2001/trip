@@ -44,7 +44,7 @@ public class GeofenceReceiver extends BroadcastReceiver {
                 }
 
                 if (!zone.equals(previous)) {
-                    notifyTransition(context, zone, true);
+                    // Route state is visible to Vanya; message delivery is server controlled.
                 }
             } else {
                 if (zone.equals(previous)) {
@@ -53,7 +53,7 @@ public class GeofenceReceiver extends BroadcastReceiver {
                 }
                 if(zone.equals(previous)){
                     if("rybinsk".equals(zone))prefs.edit().putBoolean("milestone-departure",true).apply();
-                    notifyTransition(context, zone, false);
+                    // No automatic note from the earlier itinerary.
                 }
             }
         }

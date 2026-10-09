@@ -49,13 +49,13 @@ jobs:
       - name: Prepare APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk dist/Trip-2.1.0.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/Trip-Natasha-2.2.0.apk
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Trip-Android-2.1.0
-          path: dist/Trip-2.1.0.apk
+          name: Trip-Android-2.2.0
+          path: dist/Trip-Natasha-2.2.0.apk
 
       - name: Publish rolling Android release
         env:
@@ -64,8 +64,8 @@ jobs:
           git tag -f android-latest "$GITHUB_SHA"
           git push -f origin android-latest
           if gh release view android-latest >/dev/null 2>&1; then
-            gh release edit android-latest --title "Trip Android" --notes "Актуальная Android-сборка Trip: offline fallback внутри APK, geofence-переходы, локальные уведомления и один экран поездки."
+            gh release edit android-latest --title "Trip · Наташа" --notes "Актуальная Android-сборка Trip: offline fallback внутри APK, geofence-переходы, локальные уведомления и один экран поездки."
           else
-            gh release create android-latest --title "Trip Android" --notes "Актуальная Android-сборка Trip: offline fallback внутри APK, geofence-переходы, локальные уведомления и один экран поездки."
+            gh release create android-latest --title "Trip · Наташа" --notes "Актуальная Android-сборка Trip: offline fallback внутри APK, geofence-переходы, локальные уведомления и один экран поездки."
           fi
-          gh release upload android-latest dist/Trip-2.1.0.apk --clobber
+          gh release upload android-latest dist/Trip-Natasha-2.2.0.apk --clobber

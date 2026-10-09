@@ -147,25 +147,8 @@ public final class NotificationScheduler {
     }
 
     public static void scheduleAll(Context context) {
-        try {
-            String json;
-            try(java.io.InputStream input=context.getAssets().open("www/moments.json")){
-                java.io.ByteArrayOutputStream output=new java.io.ByteArrayOutputStream();byte[] buffer=new byte[4096];int n;
-                while((n=input.read(buffer))!=-1)output.write(buffer,0,n);
-                json=output.toString("UTF-8");
-            }
-            org.json.JSONObject days=new org.json.JSONObject(json);
-            for(int day=10;day<=17;day++){
-                org.json.JSONArray items=days.getJSONArray(String.valueOf(day));
-                for(int slot=0;slot<8;slot++)cancelMoment(context,day,slot);
-                for(int slot=0;slot<items.length();slot++){
-                    org.json.JSONObject item=items.getJSONObject(slot);
-                    if(item.has("trigger")||item.has("conditional"))continue;
-                    String[] time=item.getString("time").split(":");
-                    scheduleIfFuture(context,6000+day*10+slot,atZoneTime(day,Integer.parseInt(time[0]),Integer.parseInt(time[1]),zoneFor(day,slot)),CHANNEL_TRIP,item.getString("title"),item.optString("push","Для тебя открылся новый момент ♥"),"home","day-"+day+"-"+slot);
-                }
-            }
-        } catch(Exception ignored) {}
+        // Remove alarms from earlier versions; messages are now managed by Vanya.
+        for(int day=10;day<=17;day++)for(int slot=0;slot<8;slot++)cancelMoment(context,day,slot);
     }
 
     private static void cancelMoment(Context context, int day, int slot) {

@@ -16,7 +16,7 @@ public final class TripCloud {
     private static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
     private static final Object LOCK = new Object();
     private static SharedPreferences prefs(Context context) { return context.getSharedPreferences("trip_cloud", Context.MODE_PRIVATE); }
-    public static boolean isHusband(Context context) { return "husband".equals(prefs(context).getString("role", "")); }
+    public static boolean isHusband(Context context) { return BuildConfig.HUSBAND_APP || "husband".equals(prefs(context).getString("role", "")); }
     public static String getAccess(Context context) { return prefs(context).getString("token", ""); }
     public static void setAccess(Context context, String token, String role) {
         prefs(context).edit().putString("token", token).putString("role", role).apply();
