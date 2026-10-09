@@ -138,7 +138,7 @@ public class MainActivity extends Activity {
         StringBuilder url = new StringBuilder(SITE_URL);
         url.append("?native=1");
         if ("qa".equals(BuildConfig.BUILD_TYPE)) {
-            url.append("&qa=1");
+            url.append("&qa=1&inbox=1");
         }
         if (surprise != null && !surprise.isEmpty()) {
             url.append("&surprise=").append(Uri.encode(surprise));
@@ -152,7 +152,7 @@ public class MainActivity extends Activity {
     private String offlineUrlFor(String screen, String surprise) {
         StringBuilder url = new StringBuilder("file:///android_asset/www/index.html?native=1&offline=1");
         if ("qa".equals(BuildConfig.BUILD_TYPE)) {
-            url.append("&qa=1");
+            url.append("&qa=1&inbox=1");
         }
         if (surprise != null && !surprise.isEmpty()) {
             url.append("&surprise=").append(Uri.encode(surprise));
