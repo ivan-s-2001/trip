@@ -49,11 +49,15 @@ public final class GeofenceManager {
         return true;
     }
 
+    public static boolean isLocationEnabled(Context context){
+        try{android.location.LocationManager location=(android.location.LocationManager)context.getSystemService(Context.LOCATION_SERVICE);if(location==null)return false;if(Build.VERSION.SDK_INT>=28)return location.isLocationEnabled();return location.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)||location.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER);}catch(Exception ignored){return false;}
+    }
+
     public static void unregister(Context context) { LocationServices.getGeofencingClient(context).removeGeofences(pendingIntent(context)); }
 
     public static synchronized void registerAll(Context context) {
         if(TripCloud.isHusband(context)) return;
-        if (!hasRequiredPermissions(context)||registering) return;
+        if (!hasRequiredPermissions(context)||!isLocationEnabled(context)||registering) return;
         android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
         String points=prefs.getString("points","[]"),fingerprint=points+"/"+TripCloud.getAccess(context);
         if(fingerprint.equals(prefs.getString("registered-points",""))&&System.currentTimeMillis()-prefs.getLong("registered-at",0)<3600000)return;
@@ -79,7 +83,7 @@ public final class GeofenceManager {
         }
 
         GeofencingRequest request = new GeofencingRequest.Builder()
-                .setInitialTrigger(0)
+                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
                 .addGeofences(fences)
                 .build();
 

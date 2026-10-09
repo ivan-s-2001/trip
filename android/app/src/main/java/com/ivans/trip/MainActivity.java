@@ -225,6 +225,14 @@ public class MainActivity extends Activity {
 
     private final class NativeBridge {
         @JavascriptInterface
+        public boolean isLocationEnabled(){return GeofenceManager.isLocationEnabled(MainActivity.this);}
+        @JavascriptInterface
+        public boolean notificationsEnabled(){android.app.NotificationManager manager=(android.app.NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(!manager.areNotificationsEnabled())return false;if(Build.VERSION.SDK_INT>=26){android.app.NotificationChannel channel=manager.getNotificationChannel(NotificationScheduler.CHANNEL_TRIP);if(channel!=null&&channel.getImportance()==android.app.NotificationManager.IMPORTANCE_NONE)return false;}return true;}
+        @JavascriptInterface
+        public void openLocationSettings(){runOnUiThread(()->startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)));}
+        @JavascriptInterface
+        public void openNotificationSettings(){runOnUiThread(()->{Intent intent;if(Build.VERSION.SDK_INT>=26){intent=new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName());}else intent=new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:"+getPackageName()));startActivity(intent);});}
+        @JavascriptInterface
         public void enableGeolocation(){runOnUiThread(()->requestLocationIfNeeded());}
         @JavascriptInterface
         public void useCurrentLocation(){runOnUiThread(()->{
@@ -368,11 +376,12 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if(!TripCloud.isHusband(this)&&!TripCloud.getAccess(this).isEmpty()){
-            String ready=GeofenceManager.hasRequiredPermissions(this)?"1":"0";SharedPreferences prefs=getSharedPreferences("trip_permissions",MODE_PRIVATE);if(!ready.equals(prefs.getString("geo-ready",""))){prefs.edit().putString("geo-ready",ready).apply();TripCloud.record(this,"trip-geo-ready",ready);TripCloud.flush(this,null);}MessageService.reconnect(this);
+            String ready=GeofenceManager.hasRequiredPermissions(this)&&GeofenceManager.isLocationEnabled(this)?"1":"0";SharedPreferences prefs=getSharedPreferences("trip_permissions",MODE_PRIVATE);if(!ready.equals(prefs.getString("geo-ready",""))){prefs.edit().putString("geo-ready",ready).apply();TripCloud.record(this,"trip-geo-ready",ready);TripCloud.flush(this,null);}MessageService.reconnect(this);
         }
         if (GeofenceManager.hasRequiredPermissions(this)) {
             GeofenceManager.registerAll(this);
         }
+        if(webView!=null)webView.evaluateJavascript("window.dispatchEvent(new Event('trip-permissions'));",null);
     }
 
     @Override
