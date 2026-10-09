@@ -1,4 +1,4 @@
-const CACHE = "trip-v19";
+const CACHE = "trip-v20";
 
 const CORE = [
   "./",
@@ -7,6 +7,7 @@ const CORE = [
   "./content.js",
   "./app.js",
   "./sync.js",
+  "./messages.js",
   "./manifest.webmanifest",
   "./assets/icons/icon.svg",
   "./assets/icons/bootstrap/heart-fill.svg",

@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
     private static final int LOCATION_PERMISSION_REQUEST = 2602;
     private static final int BACKGROUND_LOCATION_PERMISSION_REQUEST = 2603;
     private WebView webView;
+    private android.webkit.ValueCallback<Uri[]> fileCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,7 +95,19 @@ public class MainActivity extends Activity {
             }
         });
 
+        webView.setWebChromeClient(new android.webkit.WebChromeClient(){
+            @Override public boolean onShowFileChooser(WebView view, android.webkit.ValueCallback<Uri[]> callback, FileChooserParams params){
+                if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=callback;
+                try{startActivityForResult(params.createIntent(),2701);return true;}catch(Exception e){fileCallback.onReceiveValue(null);fileCallback=null;return false;}
+            }
+        });
+        MessageService.startIfReady(this);
         loadFromIntent(getIntent());
+    }
+
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==2701&&fileCallback!=null){fileCallback.onReceiveValue(android.webkit.WebChromeClient.FileChooserParams.parseResult(resultCode,data));fileCallback=null;}
     }
 
     private void loadFromIntent(Intent intent) {

@@ -10,6 +10,7 @@ on:
       - "styles.css"
       - "app.js"
       - "sync.js"
+      - "messages.js"
       - "content.js"
       - "moments.json"
       - "sw.js"
@@ -48,13 +49,13 @@ jobs:
       - name: Prepare APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk dist/Trip-2.0.1.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/Trip-2.1.0.apk
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Trip-Android-2.0.1
-          path: dist/Trip-2.0.1.apk
+          name: Trip-Android-2.1.0
+          path: dist/Trip-2.1.0.apk
 
       - name: Publish rolling Android release
         env:
@@ -67,4 +68,4 @@ jobs:
           else
             gh release create android-latest --title "Trip Android" --notes "Актуальная Android-сборка Trip: offline fallback внутри APK, geofence-переходы, локальные уведомления и один экран поездки."
           fi
-          gh release upload android-latest dist/Trip-2.0.1.apk --clobber
+          gh release upload android-latest dist/Trip-2.1.0.apk --clobber

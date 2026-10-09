@@ -24,6 +24,7 @@ const TripSync=(()=>{
   const m=item.key.match(/^trip-(choice|care|keepsake)-(\d+)-(\d+)$/);
   let title=labels[item.key]||'Прослушивание',value=item.value;
   if(m){const moment=window.TRIP_CONTENT.days[m[2]]?.[m[3]];title=moment?.title||'Момент';if(m[1]==='care'){const opts=Number(m[2])===10?['Вода с собой','Телефон заряжен','Документы рядом']:['Попить воды','Дать плечам отдохнуть','Минуту ничего не делать'];try{value=JSON.parse(value).map(i=>opts[i]).filter(Boolean).join(', ')||'Отметки сняты';}catch(_){}}}
+  if(item.key.startsWith('trip-message-'))title='Ответ на твоё сообщение';
   if(item.key==='trip-last-moment'){try{const v=JSON.parse(value);value=window.TRIP_CONTENT.days[v.day]?.[v.index]?.title||value;}catch(_){}}
   if(item.key==='trip-zone')value=({rybinsk:'Рыбинск',svo:'Шереметьево',tjm:'Рощино',kurgan:'Курган',between:'В дороге'})[value]||value;
   if(item.key==='trip-home-arrived'||item.key==='trip-evening-coupon')value=value==='1'?'Да':value;
@@ -49,7 +50,7 @@ const TripSync=(()=>{
   window.addEventListener('online',flush);setInterval(()=>{if(role==='husband'&&!document.hidden)refreshDashboard();else flush()},15000);
  }
  document.addEventListener('DOMContentLoaded',setup);
- return {save,record,flush};
+ return {save,record,flush,call,getRole:()=>role};
 })();
 
 window.TripSync=TripSync;

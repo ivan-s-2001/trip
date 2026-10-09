@@ -21,6 +21,8 @@ public final class TripCloud {
     public static void setAccess(Context context, String token, String role) {
         prefs(context).edit().putString("token", token).putString("role", role).apply();
         if("husband".equals(role)) GeofenceManager.unregister(context);
+        MessageService.startIfReady(context);
+        if("husband".equals(role)||token.isEmpty())context.stopService(new android.content.Intent(context,MessageService.class));
         flush(context, null);
     }
     public static void record(Context context, String key, String value) {

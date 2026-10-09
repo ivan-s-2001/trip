@@ -57,6 +57,7 @@ public class GeofenceReceiver extends BroadcastReceiver {
                 }
             }
         }
+        MessageService.startIfReady(context);
         TripCloud.flush(context, goAsync());
     }
 

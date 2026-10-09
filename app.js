@@ -496,7 +496,7 @@ function renderMedia(item,locked){
 
   mount.hidden=false;
   mount.innerHTML=qa()
-    ? `<div class="media-placeholder"><strong>${item.theme}</strong></div><img src="./assets/photos/${file}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.remove()">`
+    ? `<div class="media-placeholder"><strong>${item.theme||"Загружаем фотографию…"}</strong></div><img src="./assets/photos/${file}" alt="" onload="this.previousElementSibling.style.display='none'" onerror="this.remove()">`
     : `<div class="photo-keepsake" aria-hidden="true"><span class="bi-icon bi-heart-fill"></span><span>наше маленькое место</span></div><img src="./assets/photos/${file}" alt="${item.title}" onload="this.previousElementSibling.hidden=true" onerror="this.remove()">`;
 }
 
