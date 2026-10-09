@@ -1,0 +1,12 @@
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const db=new DatabaseSync(':memory:');
+db.exec(`CREATE TABLE access(hash TEXT PRIMARY KEY,role TEXT NOT NULL);CREATE TABLE events(id TEXT PRIMARY KEY,key TEXT,value TEXT,at INTEGER,received INTEGER);CREATE TABLE state(key TEXT PRIMARY KEY,value TEXT,at INTEGER);CREATE TABLE messages(id TEXT PRIMARY KEY,title TEXT,body TEXT,due INTEGER,created INTEGER,cancelled INTEGER DEFAULT 0);CREATE TABLE media(id TEXT PRIMARY KEY,mime TEXT,data TEXT,created INTEGER);INSERT INTO access VALUES('owner','husband');INSERT INTO state VALUES('trip-hugs','3',123);INSERT INTO messages VALUES('note','Title','{}',123,123,0);INSERT INTO media VALUES('image','image/jpeg','aGVsbG8=',123);`);
+db.exec(readFileSync(new URL('../server/migrations/002_rooms_ntfy.sql',import.meta.url),'utf8'));
+assert.equal(db.prepare('SELECT room_id FROM access').get().room_id,'legacy');
+assert.equal(db.prepare('SELECT value FROM state WHERE room_id=?').get('legacy').value,'3');
+assert.equal(db.prepare('SELECT room_id FROM media').get().room_id,'legacy');
+assert.equal(db.prepare('SELECT room_id FROM messages').get().room_id,'legacy');
+assert.match(db.prepare('SELECT topic FROM rooms').get().topic,/^trip_[a-f0-9]{48}$/);
+console.log('PASS: migration preserves existing access, replies, messages and media');

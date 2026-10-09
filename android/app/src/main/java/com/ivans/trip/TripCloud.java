@@ -18,7 +18,15 @@ public final class TripCloud {
     private static SharedPreferences prefs(Context context) { return context.getSharedPreferences("trip_cloud", Context.MODE_PRIVATE); }
     public static boolean isHusband(Context context) { return BuildConfig.HUSBAND_APP || "husband".equals(prefs(context).getString("role", "")); }
     public static String getAccess(Context context) { return prefs(context).getString("token", ""); }
+    public static String getPushTopic(Context context) { return prefs(context).getString("push_topic", ""); }
+    public static void setPushTopic(Context context, String topic) {
+        if (!topic.matches("trip_[a-f0-9]{48}")) return;
+        if (topic.equals(getPushTopic(context))) return;
+        prefs(context).edit().putString("push_topic", topic).apply();
+        MessageService.reconnect(context);
+    }
     public static void setAccess(Context context, String token, String role) {
+        if(!token.equals(getAccess(context))) prefs(context).edit().remove("push_topic").apply();
         prefs(context).edit().putString("token", token).putString("role", role).apply();
         if("husband".equals(role)) GeofenceManager.unregister(context);
         MessageService.startIfReady(context);

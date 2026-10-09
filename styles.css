@@ -583,3 +583,5 @@ button:focus-visible{outline:3px solid #b56a82;outline-offset:3px}
 .wife-feed{position:fixed;inset:0;margin:0;border-radius:0;box-sizing:border-box;max-width:none;width:100%;max-height:none;height:100dvh;display:flex;flex-direction:column;padding:24px;background:linear-gradient(155deg,#fff8f4,#f0dfe5)}.wife-feed header{flex:none}.wife-feed header p{font-size:10px;letter-spacing:3px}.wife-feed header h2{margin:8px 0}.wife-feed #inboxMessages{flex:1;overflow-y:auto;min-height:0}.wife-feed nav{display:flex;justify-content:space-between;flex:none}.wife-feed article{border:0}.wife-feed img{max-height:48dvh}.wife-feed button:disabled{opacity:.3}
 
 #deviceConnection textarea{display:block;width:100%;box-sizing:border-box;resize:vertical;overflow-wrap:anywhere;border:1px solid var(--line);border-radius:12px;padding:12px;font:14px var(--sans);margin:10px 0;background:var(--paper);color:var(--ink)}
+
+.connect-sheet{max-height:90dvh;overflow:auto;box-sizing:border-box}.connect-sheet section{padding-bottom:20px}.connect-sheet section p{font-size:14px;line-height:1.5}#connectionBadge{display:block;margin-top:6px}

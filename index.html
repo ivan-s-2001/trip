@@ -10,7 +10,7 @@
   <title>мы</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./styles.css?v=20261009-editor-access1" />
+  <link rel="stylesheet" href="./styles.css?v=20261009-ntfy1" />
 </head>
 <body>
   <main class="scene" id="scene">
@@ -69,11 +69,11 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <dialog id="connectSheet" class="connect-sheet"><button id="connectClose" type="button" aria-label="Закрыть">×</button><h2>Подключение</h2><p>Код или ссылку для Наташи создай в редакторе Вани. Достаточно подключиться один раз.</p><form id="connectForm"><label for="accessCode">Код или ссылка подключения</label><input id="accessCode" autocomplete="off" type="text" spellcheck="false" autocapitalize="none" required /><button class="primary" type="submit">Подключить</button><p id="connectError" role="status"></p></form></dialog>
-  <main id="husbandDashboard" class="husband-dashboard" hidden><header><div><p>НАШЕ МЕСТО</p><h1>Её поездка</h1><small id="dashboardStatus"></small></div><button id="dashboardRefresh" type="button">Обновить</button><button id="dashboardLogout" type="button">Выйти</button></header><p id="dashboardEmpty">Здесь появятся её первые отметки.</p><section id="deviceConnection"><h2>Подключить Наташу</h2><p>Создай код здесь и вставь его в её приложении. Можно открыть ссылку на её телефоне — подключение сохранится автоматически.</p><button id="createConnection" type="button">Создать код подключения</button><div id="connectionResult" hidden><label for="connectionCode">Код для её приложения</label><textarea id="connectionCode" rows="3" readonly></textarea><button id="copyConnection" type="button">Скопировать код</button><label for="connectionLink">Ссылка для браузера</label><textarea id="connectionLink" rows="4" readonly></textarea><button id="copyConnectionLink" type="button">Скопировать ссылку</button></div><p id="connectionStatus" role="status"></p></section><section id="messageComposer"></section><section id="sentMessages"></section><h2>Сейчас</h2><section id="dashboardState"></section><h2>Последние действия</h2><section id="dashboardEvents"></section></main>
-  <script src="./sync.js?v=20261009-editor-access1" defer></script>
-  <script src="./content.js?v=20261009-editor-access1"></script>
-  <script src="./messages.js?v=20261009-editor-access1" defer></script>
-  <script src="./app.js?v=20261009-editor-access1" defer></script>
+  <dialog id="connectSheet" class="connect-sheet"><button id="connectClose" type="button" aria-label="Закрыть">×</button><h2>Наше место</h2><section id="ownerSetup"><p>В твоём приложении начни здесь. Старый код не нужен.</p><button class="primary" id="createRoom" type="button">Создать наше место</button><p>Уже подключённое приложение откроет твоё место автоматически.</p></section><form id="connectForm"><label for="accessCode">Код из редактора или ссылка подключения</label><input id="accessCode" autocomplete="off" type="text" spellcheck="false" autocapitalize="characters" required placeholder="ABCDE-12345" /><button class="primary" type="submit">Подключить</button><p id="connectError" role="status"></p></form></dialog>
+  <main id="husbandDashboard" class="husband-dashboard" hidden><header><div><p>НАШЕ МЕСТО</p><h1>Её поездка</h1><small id="dashboardStatus"></small><small id="connectionBadge">Проверяем связь</small></div><button id="dashboardRefresh" type="button">Обновить</button><button id="dashboardLogout" type="button">Выйти</button></header><p id="dashboardEmpty">Здесь появятся её первые отметки.</p><section id="deviceConnection"><h2>Подключить Наташу</h2><p>Создай код и введи его в приложении Наташи один раз. После подключения сообщения будут приходить автоматически.</p><button id="createConnection" type="button">Создать код подключения</button><div id="connectionResult" hidden><label for="connectionCode">Код для её приложения</label><textarea id="connectionCode" rows="3" readonly></textarea><button id="copyConnection" type="button">Скопировать код</button><label for="connectionLink">Ссылка для браузера</label><textarea id="connectionLink" rows="4" readonly></textarea><button id="copyConnectionLink" type="button">Скопировать ссылку</button></div><p id="connectionStatus" role="status"></p></section><section id="messageComposer"></section><section id="sentMessages"></section><h2>Сейчас</h2><section id="dashboardState"></section><h2>Последние действия</h2><section id="dashboardEvents"></section></main>
+  <script src="./sync.js?v=20261009-ntfy1" defer></script>
+  <script src="./content.js?v=20261009-ntfy1"></script>
+  <script src="./messages.js?v=20261009-ntfy1" defer></script>
+  <script src="./app.js?v=20261009-ntfy1" defer></script>
 </body>
 </html>

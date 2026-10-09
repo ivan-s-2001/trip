@@ -1,6 +1,6 @@
 const TripSync=(()=>{
  const API='https://trip-private.ivan-s-2001.workers.dev';
- let token=localStorage.getItem('trip-access')||window.TripNative?.getSyncAccess?.()||'',role=localStorage.getItem('trip-role')||'',busy=false;
+ let token=localStorage.getItem('trip-access')||window.TripNative?.getSyncAccess?.()||'',role=localStorage.getItem('trip-role')||(token?window.TripNative?.getAppRole?.():'')||'',busy=false;
  const queue=()=>{try{return JSON.parse(localStorage.getItem('trip-outbox'))||[]}catch(_){return []}};
  const id=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
  async function call(path,options={}){const r=await fetch(API+path,{...options,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}});if(!r.ok)throw Error(String(r.status));return r.json()}
@@ -15,7 +15,44 @@ const TripSync=(()=>{
   catch(_){}finally{busy=false}
  }
  function save(key,value){localStorage.setItem(key,String(value));record(key,value)}
- async function login(value){const previous=token;const candidate=value.trim();try{token=candidate.includes('#')?new URLSearchParams(candidate.split('#')[1]).get('access')||'':candidate;const result=await call('/api/me');const expected=window.TripNative?.getAppRole?.();if(expected&&result.role!==expected)throw Error('wrong-role');role=result.role;localStorage.setItem('trip-role',role);localStorage.setItem('trip-access',token);window.TripNative?.setSyncAccess?.(token,role);document.getElementById('connectSheet').close();if(role==='husband')openDashboard();else{document.getElementById('scene').hidden=false;await restore();flush();}window.dispatchEvent(new Event('trip-connected'));}catch(error){token=previous;throw error;}}
+ function key(){return [...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,'0')).join('');}
+ let push=null;
+ function watchPush(topic){
+  push?.close();push=null;
+  window.TripNative?.setPushTopic?.(topic||'');
+  if(role!=='wife'||!topic||!window.EventSource)return;
+  push=new EventSource('https://ntfy.sh/'+topic+'/sse');
+  const refresh=()=>window.dispatchEvent(new Event('trip-messages'));
+  push.onmessage=refresh;push.addEventListener('open',refresh);
+ }
+ async function login(value){
+  const previous=token,candidate=value.trim();
+  try{
+   const params=candidate.includes('#')?new URLSearchParams(candidate.split('#')[1]):null;
+   const code=params?.get('pair')||candidate;
+   if(/^[A-Fa-f0-9]{5}-?[A-Fa-f0-9]{5}$/.test(code.replace(/\s/g,''))){
+    if(window.TripNative?.getAppRole?.()==='husband')throw Error('wrong-role');
+    let pending;try{pending=JSON.parse(localStorage.getItem('trip-pair-key'))}catch(_){}
+    if(!pending||pending.code!==code)pending={code,token:key()};localStorage.setItem('trip-pair-key',JSON.stringify(pending));
+    await call('/api/pair',{method:'POST',body:JSON.stringify({code,token:pending.token})});token=pending.token;
+   }else token=params?.get('access')||candidate;
+   const result=await call('/api/me'),expected=window.TripNative?.getAppRole?.();
+   if(expected&&result.role!==expected)throw Error('wrong-role');
+   const oldRoom=localStorage.getItem('trip-room');
+   if(oldRoom&&oldRoom!==result.roomId){for(const name of ['trip-outbox','trip-received-messages','trip-composer-draft'])localStorage.removeItem(name);}
+   role=result.role;localStorage.setItem('trip-role',role);localStorage.setItem('trip-access',token);localStorage.setItem('trip-room',result.roomId||'legacy');
+   window.TripNative?.setSyncAccess?.(token,role);watchPush(result.pushTopic);
+   document.getElementById('connectSheet').close();
+   if(role==='husband')openDashboard();else{await restore();flush();}
+   document.getElementById('connectionBadge').textContent='Подключено';document.getElementById('ownerSetup').hidden=true;
+   window.dispatchEvent(new Event('trip-connected'));
+  }catch(error){token=previous;throw error;}
+ }
+ async function createRoom(){
+  const ownerKey=localStorage.getItem('trip-setup-key')||key();localStorage.setItem('trip-setup-key',ownerKey);
+  await call('/api/setup',{method:'POST',body:JSON.stringify({token:ownerKey})});
+  await login(ownerKey);localStorage.removeItem('trip-setup-key');
+ }
  async function restore(){
   try{const result=await call('/api/state');const pending=new Set(queue().map(e=>e.key));for(const item of result.state)if(!pending.has(item.key))localStorage.setItem(item.key,item.value);}catch(_){}
  }
@@ -39,18 +76,32 @@ const TripSync=(()=>{
  }
  function openDashboard(){document.getElementById('husbandDashboard').hidden=false;document.getElementById('scene').hidden=true;refreshDashboard()}
  async function setup(){
-  if(new URLSearchParams(location.search).get("qa")==="1")return;
-  document.getElementById('connectButton').addEventListener('click',()=>document.getElementById('connectSheet').showModal());
-  document.getElementById('connectClose').addEventListener('click',()=>document.getElementById('connectSheet').close());
-  document.getElementById('connectForm').addEventListener('submit',async e=>{e.preventDefault();try{await login(document.getElementById('accessCode').value);document.getElementById('connectError').textContent='';}catch(_){document.getElementById('connectError').textContent='Не удалось подключиться. Проверь код и интернет.'}});
-  document.getElementById('createConnection').addEventListener('click',async e=>{const button=e.currentTarget;button.disabled=true;const status=document.getElementById('connectionStatus');try{const result=await call('/api/access',{method:'POST'});document.getElementById('connectionCode').value=result.token;document.getElementById('connectionLink').value=`https://ivan-s-2001.github.io/trip/#access=${result.token}`;document.getElementById('connectionResult').hidden=false;status.textContent='Готово. Этот код подключает только её приложение. Уже подключённые телефоны продолжат работать.';}catch(_){status.textContent='Не удалось создать код. Проверь подключение и попробуй ещё раз.';}finally{button.disabled=false;}});
-  for(const [button,field]of [['copyConnection','connectionCode'],['copyConnectionLink','connectionLink']])document.getElementById(button).addEventListener('click',async()=>{const input=document.getElementById(field);try{await navigator.clipboard.writeText(input.value);document.getElementById('connectionStatus').textContent='Скопировано.';}catch(_){input.focus();input.select();document.getElementById('connectionStatus').textContent='Выделено — скопируй текст.';}});
-  document.getElementById('dashboardRefresh').addEventListener('click',refreshDashboard);
-  document.getElementById('dashboardLogout').addEventListener('click',()=>{localStorage.removeItem('trip-access');localStorage.removeItem('trip-role');window.TripNative?.setSyncAccess?.('','');location.hash='';location.reload()});
-  const params=new URLSearchParams(location.hash.slice(1));const incoming=params.get('access');if(incoming){history.replaceState(null,'',location.pathname+location.search);token=incoming;}
-  if(token){try{await login(token)}catch(_){document.getElementById('connectError').textContent='Подключение пока недоступно. Проверь интернет или создай новый код в редакторе.'}}
-  if(!role&&window.TripNative?.getAppRole?.()==='husband')document.getElementById('connectSheet').showModal();
-  window.addEventListener('online',flush);setInterval(()=>{if(role==='husband'&&!document.hidden)refreshDashboard();else flush()},15000);
+  if(new URLSearchParams(location.search).get('qa')==='1')return;
+  const $=id=>document.getElementById(id),expected=window.TripNative?.getAppRole?.()||new URLSearchParams(location.search).get('app');
+  $('ownerSetup').hidden=expected==='wife';
+  $('connectButton').addEventListener('click',()=>$('connectSheet').showModal());
+  $('connectClose').addEventListener('click',()=>$('connectSheet').close());
+  $('createRoom').addEventListener('click',async e=>{e.currentTarget.disabled=true;try{await createRoom();$('connectError').textContent='';}catch(_){$('connectError').textContent='Не удалось создать наше место. Проверь интернет и попробуй ещё раз.';}finally{e.currentTarget.disabled=false;}});
+  $('connectForm').addEventListener('submit',async e=>{e.preventDefault();try{await login($('accessCode').value);$('connectError').textContent='';}catch(error){$('connectError').textContent=error.message==='wrong-role'?'Это подключение для другого приложения.':'Не удалось подключиться. Код действует 15 минут — создай новый в редакторе и проверь интернет.';}});
+  $('createConnection').addEventListener('click',async e=>{const button=e.currentTarget;button.disabled=true;try{
+   const result=await call('/api/access',{method:'POST'});
+   $('connectionCode').value=result.code;
+   $('connectionLink').value=`https://ivan-s-2001.github.io/trip/#pair=${result.code}`;
+   $('connectionResult').hidden=false;
+   $('connectionStatus').textContent='Введи этот код в приложении Наташи. Он действует 15 минут и подходит для одного телефона.';
+  }catch(_){$('connectionStatus').textContent='Не удалось создать код. Проверь интернет и попробуй ещё раз.';}finally{button.disabled=false;}});
+  for(const [button,field]of [['copyConnection','connectionCode'],['copyConnectionLink','connectionLink']])$(button).addEventListener('click',async()=>{const input=$(field);try{await navigator.clipboard.writeText(input.value);$('connectionStatus').textContent='Скопировано.';}catch(_){input.focus();input.select();$('connectionStatus').textContent='Выделено — скопируй текст.';}});
+  $('dashboardRefresh').addEventListener('click',refreshDashboard);
+  $('dashboardLogout').textContent='Подключение';
+  $('dashboardLogout').addEventListener('click',()=>$('connectSheet').showModal());
+  const params=new URLSearchParams(location.hash.slice(1)),incoming=params.get('pair')||params.get('access');
+  if(incoming)history.replaceState(null,'',location.pathname+location.search);
+  if(role==='husband')openDashboard();
+  if(token||incoming){try{await login(incoming||token)}catch(_){$('connectionBadge').textContent='Нет связи';}}
+  if(!role&&expected==='husband')$('connectSheet').showModal();
+  if(role==='wife')window.dispatchEvent(new Event('trip-connected'));
+  window.addEventListener('online',()=>{if(token)login(token).catch(()=>{});flush();});
+  setInterval(()=>{if(role==='husband'&&!document.hidden)refreshDashboard();else flush()},30000);
  }
  document.addEventListener('DOMContentLoaded',setup);
  return {save,record,flush,call,getRole:()=>role};

@@ -12,5 +12,9 @@ async function screen(nativeRole,storedRole='',storedToken=''){
  await wife.element('connectForm').listeners.submit({preventDefault(){}});assert.equal(wife.store.get('trip-access'),'a'.repeat(64));assert.equal(wife.nativeSaved[0][1],'wife');
  const husband=await screen('husband');assert.equal(husband.element('connectSheet').open,true);
  husband.element('accessCode').value='a'.repeat(64);await husband.element('connectForm').listeners.submit({preventDefault(){}});assert.equal(husband.store.get('trip-access'),'');assert.equal(husband.context.TripSync.getRole(),'');
- console.log('PASS: recipient opens without login, connection link saved natively, editor rejects recipient code');
+ const fresh=await screen('husband'),setupKeys=[];let offline=true;
+ fresh.context.fetch=async(path,options)=>{if(path.endsWith('/api/setup')){setupKeys.push(JSON.parse(options.body).token);if(offline)throw Error('offline');return{ok:true,json:async()=>({role:'husband'})}}return{ok:true,json:async()=>path.endsWith('/api/me')?{role:'husband',roomId:'new-space',pushTopic:'trip_'+'a'.repeat(48)}:{state:[],events:[]}};};
+ const setupButton=fresh.element('createRoom');await setupButton.listeners.click({currentTarget:setupButton});assert.equal(fresh.store.get('trip-access'),'');
+ offline=false;await setupButton.listeners.click({currentTarget:setupButton});assert.equal(setupKeys[0],setupKeys[1]);assert.equal(fresh.context.TripSync.getRole(),'husband');assert.match(fresh.store.get('trip-access'),/^[a-f0-9]{64}$/);assert.equal(fresh.element('husbandDashboard').hidden,false);assert.ok(!fresh.element('connectSheet').open);
+ console.log('PASS: recipient opens without login, link saved natively, role checks, owner setup without old code and retry after failure');
 })().catch(e=>{console.error(e);process.exit(1)});

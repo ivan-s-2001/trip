@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS rooms(id TEXT PRIMARY KEY,topic TEXT NOT NULL,created INTEGER NOT NULL);
+INSERT OR IGNORE INTO rooms VALUES('legacy','trip_'||lower(hex(randomblob(24))),0);
+ALTER TABLE access ADD COLUMN room_id TEXT NOT NULL DEFAULT 'legacy';
+ALTER TABLE messages ADD COLUMN room_id TEXT NOT NULL DEFAULT 'legacy';
+ALTER TABLE media ADD COLUMN room_id TEXT NOT NULL DEFAULT 'legacy';
+ALTER TABLE events ADD COLUMN room_id TEXT NOT NULL DEFAULT 'legacy';
+ALTER TABLE state RENAME TO state_legacy;
+CREATE TABLE state(room_id TEXT NOT NULL,key TEXT NOT NULL,value TEXT NOT NULL,at INTEGER NOT NULL,PRIMARY KEY(room_id,key));
+INSERT INTO state SELECT 'legacy',key,value,at FROM state_legacy;
+DROP TABLE state_legacy;
+CREATE TABLE IF NOT EXISTS pairings(hash TEXT PRIMARY KEY,room_id TEXT NOT NULL,expires INTEGER NOT NULL,used_hash TEXT);
+CREATE TABLE IF NOT EXISTS push_jobs(message_id TEXT PRIMARY KEY,room_id TEXT NOT NULL,due INTEGER NOT NULL,sent INTEGER NOT NULL DEFAULT 0,attempts INTEGER NOT NULL DEFAULT 0,retry_at INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX IF NOT EXISTS messages_room_due ON messages(room_id,cancelled,due);
+CREATE INDEX IF NOT EXISTS events_room_at ON events(room_id,at);
+CREATE INDEX IF NOT EXISTS pending_push ON push_jobs(sent,due,retry_at);

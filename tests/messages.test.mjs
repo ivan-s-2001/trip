@@ -1,10 +1,10 @@
+import {makeEnv} from './test-db.mjs';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
 import worker from '../server/worker.mjs';
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
-const tokens={wife:'a'.repeat(64),husband:'b'.repeat(64)},access=new Map(),messages=new Map(),media=new Map();
-for(const [role,token]of Object.entries(tokens))access.set(Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token))).toString('hex'),role);
-const env={DB:{prepare(sql){const stmt={args:[],bind(...args){this.args=args;return this;},async first(){const a=this.args;return sql.includes('FROM access')?access.has(a[0])?{role:access.get(a[0])}:null:sql.includes('FROM media')?media.get(a[0])||null:messages.get(a[0])||null;},async all(){return{results:[...messages.values()].filter(m=>!sql.includes('cancelled=0')||!m.cancelled&&m.due<=this.args[0]).sort((a,b)=>b.due-a.due)};},async run(){const a=this.args;if(sql.includes('INSERT INTO access')){access.set(a[0],a[1]);}else if(sql.includes('INSERT INTO media')){media.set(a[0],{id:a[0],mime:a[1],data:a[2]});}else if(sql.includes('INSERT INTO messages')){messages.set(a[0],{id:a[0],title:a[1],body:a[2],due:a[3],created:a[4],cancelled:0});}else if(sql.includes('UPDATE messages SET cancelled')){const m=messages.get(a[0]);if(m&&m.due>a[1]){m.cancelled=1;return{meta:{changes:1}};}return{meta:{changes:0}};}return{meta:{changes:1}};}};return stmt;}}};
+const tokens={wife:'a'.repeat(64),husband:'b'.repeat(64)};
+const {env,db}=makeEnv(tokens);
 async function call(path,role,data){return worker.fetch(new Request('https://example.test/api/'+path,{method:data?'POST':'GET',headers:role?{Authorization:'Bearer '+tokens[role]}:{},body:data?JSON.stringify(data):undefined}),env);}
 const upload=await(await call('media','husband',{mime:'image/jpeg',data:'aGVsbG8='})).json();
 assert.equal((await call('media','wife',{mime:'image/jpeg',data:'aGVsbG8='})).status,403);
@@ -13,7 +13,7 @@ assert.equal((await call('media/'+upload.id,'wife')).status,200);
 const content={title:'Для Наташи',text:'Люблю ♥'.repeat(1000),interactive:'choice',choices:['Кино','Обниматься'],media:Array.from({length:10},()=>upload),due:Date.now()+60000,requestId:crypto.randomUUID()};
 assert.equal((await call('messages','wife',content)).status,403);
 assert.equal((await call('messages','husband',content)).status,200);
-assert.equal((await call('messages','husband',content)).status,200);assert.equal(messages.size,1);
+assert.equal((await call('messages','husband',content)).status,200);assert.equal(db.prepare('SELECT count(*) AS n FROM messages').get().n,1);
 assert.equal((await(await call('messages','wife')).json()).messages.length,0);
 assert.equal((await(await call('messages','husband')).json()).messages.length,1);
 assert.equal((await call('messages','husband',{...content,requestId:crypto.randomUUID(),media:[...content.media,upload]})).status,400);
@@ -29,8 +29,10 @@ console.log('PASS: private media, roles, 10 photos, schedule visibility, retries
 assert.equal((await call('access',null,{})).status,401);
 assert.equal((await call('access','wife',{})).status,403);
 const connection=await(await call('access','husband',{})).json();
-assert.match(connection.token,/^[a-f0-9]{64}$/);assert.equal(connection.role,'wife');
-const original=tokens.wife;tokens.wife=connection.token;
+assert.match(connection.code,/^[A-F0-9]{5}-[A-F0-9]{5}$/);assert.equal(connection.role,'wife');
+const recipient='c'.repeat(64);
+assert.equal((await call('pair',null,{code:connection.code,token:recipient})).status,200);
+const original=tokens.wife;tokens.wife=recipient;
 assert.equal((await(await call('me','wife')).json()).role,'wife');
 assert.equal((await call('messages','wife',content)).status,403);
 tokens.wife=original;assert.equal((await call('me','wife')).status,200);

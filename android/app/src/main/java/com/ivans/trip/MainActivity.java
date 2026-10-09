@@ -166,6 +166,9 @@ public class MainActivity extends Activity {
         public void setSyncAccess(String token, String role) { TripCloud.setAccess(MainActivity.this, token, role); }
 
         @JavascriptInterface
+        public void setPushTopic(String topic) { TripCloud.setPushTopic(MainActivity.this, topic); }
+
+        @JavascriptInterface
         public String getZone() {
             return GeofenceManager.getLastZone(MainActivity.this);
         }
