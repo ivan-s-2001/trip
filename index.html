@@ -10,7 +10,7 @@
   <title>мы</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./assets/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./styles.css?v=20261009-v251" />
+  <link rel="stylesheet" href="./styles.css?v=20261009-v252" />
 </head>
 <body>
   <main class="scene" id="scene">
@@ -74,7 +74,7 @@
     <p class="eyebrow">Только для нас</p><h2 id="connectTitle">Всегда рядом</h2>
     <section id="ownerSetup"><p>Создай место для ваших писем, фотографий и голосовых. Потом подключи телефон Наташи.</p><button class="primary" id="createRoom" type="button">Создать наше место</button><p class="field-hint">Подключение сохранится на этом телефоне.</p></section>
     <form id="connectForm"><label for="accessCode">Код или ссылка от Вани</label><input id="accessCode" autocomplete="off" type="text" spellcheck="false" autocapitalize="characters" required placeholder="ABCDE-12345" aria-describedby="connectError" /><button class="primary" type="submit">Подключиться</button></form>
-    <p id="connectError" role="alert"></p><section id="geoSettings" hidden><h3>Письма по маршруту</h3><p class="field-hint">Разреши точное местоположение и доступ «Разрешать всегда», чтобы письма приходили при приезде и отъезде.</p><button id="enableGeo" type="button">Настроить геолокацию</button><p id="geoStatus" role="status"></p></section>
+    <p id="connectError" role="alert"></p><section id="geoSettings" hidden><h3>Чтобы письма приходили</h3><p id="notificationStatus" role="status"></p><button id="enableNotifications" type="button">Настроить уведомления</button><p class="field-hint">Разреши точное местоположение и доступ «Разрешать всегда», чтобы письма приходили при приезде и отъезде.</p><button id="enableGeo" type="button">Настроить геолокацию</button><p id="geoStatus" role="status"></p><button id="enableDeviceLocation" type="button" hidden>Включить местоположение телефона</button></section>
   </dialog>
   <main id="husbandDashboard" class="husband-dashboard" hidden>
     <header class="dashboard-header"><div><p class="eyebrow">Наше место · Ваня</p><h1>Быть рядом</h1><small id="connectionBadge">Проверяем связь</small></div><button id="dashboardRefresh" class="icon-button" type="button" aria-label="Обновить">Обновить</button><button id="dashboardLogout" type="button">Подключение</button></header>
@@ -84,10 +84,10 @@
     <section id="activityPanel"><p class="eyebrow">С её телефона</p><h2>Ответы Наташи</h2><small id="dashboardStatus"></small><p id="dashboardEmpty" class="empty-state">Когда Наташа откроет письмо или ответит, ты увидишь это здесь.</p><details><summary>Последние ответы</summary><section id="dashboardState"></section></details><details><summary>Все действия</summary><section id="dashboardEvents"></section></details></section></aside></div>
   </main>
   <dialog id="messagePreview" class="preview-sheet" aria-labelledby="previewTitle"><button id="closePreview" class="icon-button" type="button" aria-label="Закрыть предпросмотр"><span class="bi-icon bi-x-lg" aria-hidden="true"></span></button><p class="eyebrow">Так она увидит сообщение</p><div id="previewBody"></div><p class="field-hint">Это предпросмотр. Сообщение ещё не отправлено.</p></dialog>
-  <script src="./sync.js?v=20261009-v251" defer></script>
-  <script src="./content.js?v=20261009-v251"></script>
-  <script src="./attachments.js?v=20261009-v251" defer></script>
-  <script src="./messages.js?v=20261009-v251" defer></script>
-  <script src="./app.js?v=20261009-v251" defer></script>
+  <script src="./sync.js?v=20261009-v252" defer></script>
+  <script src="./content.js?v=20261009-v252"></script>
+  <script src="./attachments.js?v=20261009-v252" defer></script>
+  <script src="./messages.js?v=20261009-v252" defer></script>
+  <script src="./app.js?v=20261009-v252" defer></script>
 </body>
 </html>
