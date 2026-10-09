@@ -8,7 +8,7 @@ const digest=async value=>hex(new Uint8Array(await crypto.subtle.digest('SHA-256
 const secret=()=>hex(crypto.getRandomValues(new Uint8Array(32)));
 async function drainPush(env,roomId=null){
  const now=Date.now();
- const jobs=await env.DB.prepare('SELECT p.message_id,p.attempts,r.topic FROM push_jobs p JOIN rooms r ON r.id=p.room_id JOIN messages m ON m.id=p.message_id WHERE p.sent=0 AND p.due<=? AND p.retry_at<=? AND m.cancelled=0 AND m.due<=? AND (? IS NULL OR p.room_id=?) LIMIT 30').bind(now,now,now,roomId,roomId).all();
+ const jobs=await env.DB.prepare('SELECT p.message_id,p.attempts,r.topic FROM push_jobs p JOIN rooms r ON r.id=p.room_id JOIN messages m ON m.id=p.message_id WHERE p.sent=0 AND p.due<=? AND p.retry_at<=? AND m.cancelled=0 AND m.due<=? AND (? IS NULL OR p.room_id=?) LIMIT 10').bind(now,now,now,roomId,roomId).all();
  await Promise.all(jobs.results.map(async job=>{
   try{
    const response=await fetch('https://ntfy.sh/'+job.topic,{method:'POST',headers:{'Content-Type':'text/plain','Cache':'no','Firebase':'no','UnifiedPush':'1'},body:'sync',signal:AbortSignal.timeout(8000)});
@@ -22,12 +22,17 @@ const presetPoints={rybinsk:[58.05,38.8333,'Рыбинск'],svo:[55.97264,37.41
 async function planMessageId(room,id){const h=await digest(room+':trip-plan-v25:'+id);return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20,32)}`;}
 async function seedPlans(env,room){
  const count=await env.DB.prepare('SELECT count(*) AS n FROM plans WHERE room_id=? AND message_id IS NOT NULL').bind(room).first();if(count.n>=defaultPlans.length)return;
- const statements=[];for(const p of defaultPlans){const id=await planMessageId(room,p.id);let trigger=null,due;
+ const entries=[];for(const p of defaultPlans){const id=await planMessageId(room,p.id);let trigger=null,due;
  if(p.when==='later')due=Date.parse(p.date+':00'+(p.timeZone==='moscow'?'+03:00':'+05:00'));
  else{const [lat,lon,label]=presetPoints[p.point];const radius=p.radius*1000;trigger={zone:'geo_'+(await digest(JSON.stringify([lat,lon,radius]))).slice(0,20),transition:p.when,lat,lon,radius,label:p.pointName||label,notBefore:Date.parse(p.notBefore),notAfter:Date.parse(p.notAfter),afterMessage:p.afterPlan?await planMessageId(room,p.afterPlan):null};due=GEO_DUE;}
  const body=JSON.stringify({text:p.text,interactive:p.interactive,choices:p.choices,media:[],timeZone:p.timeZone,trigger});
- statements.push(env.DB.prepare('INSERT OR IGNORE INTO plans(room_id,id,body) VALUES(?,?,?)').bind(room,p.id,JSON.stringify(p)),env.DB.prepare('INSERT OR IGNORE INTO messages(id,title,body,due,created,room_id) SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM plans WHERE room_id=? AND id=? AND message_id IS NULL)').bind(id,p.title,body,due,Date.now(),room,room,p.id),env.DB.prepare('INSERT OR IGNORE INTO push_jobs(message_id,room_id,due) SELECT id,room_id,due FROM messages WHERE id=? AND room_id=?').bind(id,room),env.DB.prepare('UPDATE plans SET message_id=? WHERE room_id=? AND id=? AND message_id IS NULL').bind(id,room,p.id));
- }await env.DB.batch(statements);
+ entries.push({planId:p.id,id,title:p.title,body,planBody:JSON.stringify(p),due,created:Date.now()});
+ }const payload=JSON.stringify(entries);await env.DB.batch([
+ env.DB.prepare("INSERT OR IGNORE INTO plans(room_id,id,body) SELECT ?,json_extract(value,'$.planId'),json_extract(value,'$.planBody') FROM json_each(?)").bind(room,payload),
+ env.DB.prepare("INSERT OR IGNORE INTO messages(id,title,body,due,created,room_id) SELECT json_extract(value,'$.id'),json_extract(value,'$.title'),json_extract(value,'$.body'),json_extract(value,'$.due'),json_extract(value,'$.created'),? FROM json_each(?) WHERE EXISTS(SELECT 1 FROM plans WHERE room_id=? AND id=json_extract(value,'$.planId') AND message_id IS NULL)").bind(room,payload,room),
+ env.DB.prepare("INSERT OR IGNORE INTO push_jobs(message_id,room_id,due) SELECT id,room_id,due FROM messages WHERE room_id=? AND id IN(SELECT json_extract(value,'$.id') FROM json_each(?))").bind(room,payload),
+ env.DB.prepare("UPDATE plans SET message_id=(SELECT json_extract(value,'$.id') FROM json_each(?) WHERE json_extract(value,'$.planId')=plans.id) WHERE room_id=? AND message_id IS NULL AND id IN(SELECT json_extract(value,'$.planId') FROM json_each(?))").bind(payload,room,payload)
+ ]);
 }
 export default {
  async fetch(request,env,ctx){
@@ -189,17 +194,16 @@ export default {
     if(!Array.isArray(events)||!events.length||events.length>40)return reply({error:'invalid-batch'},400);
     const now=Date.now();
     for(const e of events)if(!e||typeof e.id!=='string'||! /^[a-zA-Z0-9-]{16,80}$/.test(e.id)||!allowedKey.test(e.key)||typeof e.value!=='string'||e.value.length>2000||!Number.isSafeInteger(e.at)||e.at<0||e.at>now+300000)return reply({error:'invalid-event'},400);
-    const statements=[];
-    for(const e of events){
-     statements.push(env.DB.prepare('INSERT OR IGNORE INTO events(id,key,value,at,received,room_id) VALUES(?,?,?,?,?,?)').bind(e.id,e.key,e.value,e.at,now,user.room_id));
-     statements.push(env.DB.prepare('INSERT INTO state(room_id,key,value,at) VALUES(?,?,?,?) ON CONFLICT(room_id,key) DO UPDATE SET value=excluded.value,at=excluded.at WHERE excluded.at>=state.at').bind(user.room_id,e.key,e.value,e.at));
-     if(e.key==='trip-geo'){
-      let geo;try{geo=JSON.parse(e.value);}catch(_){return reply({error:'invalid-geofence-event'},400);}if(!/^geo_[a-f0-9]{20}$/.test(geo.zone||'')||!['enter','exit'].includes(geo.transition))return reply({error:'invalid-geofence-event'},400);
-      statements.push(env.DB.prepare("UPDATE messages SET due=? WHERE room_id=? AND cancelled=0 AND due>? AND created<=? AND COALESCE(json_extract(body,'$.trigger.notBefore'),0)<=? AND COALESCE(json_extract(body,'$.trigger.notAfter'),4102444800000)>=? AND (json_extract(body,'$.trigger.afterMessage') IS NULL OR EXISTS(SELECT 1 FROM messages prior WHERE prior.id=json_extract(messages.body,'$.trigger.afterMessage') AND prior.room_id=messages.room_id AND prior.due<? AND prior.cancelled=0)) AND json_extract(body,'$.trigger.zone')=? AND json_extract(body,'$.trigger.transition')=? AND NOT EXISTS(SELECT 1 FROM geo_receipts WHERE event_id=? AND room_id=?) AND EXISTS(SELECT 1 FROM events WHERE id=? AND room_id=? AND received=?)").bind(now,user.room_id,now,e.at,e.at,e.at,now,geo.zone,geo.transition,e.id,user.room_id,e.id,user.room_id,now));
-      statements.push(env.DB.prepare('UPDATE push_jobs SET due=?,retry_at=0 WHERE room_id=? AND sent=0 AND message_id IN(SELECT id FROM messages WHERE room_id=? AND due=?)').bind(now,user.room_id,user.room_id,now));
-      statements.push(env.DB.prepare('INSERT OR IGNORE INTO geo_receipts(room_id,event_id) VALUES(?,?)').bind(user.room_id,e.id));
-     }
-    }
+    const geoEvents=[];for(const e of events)if(e.key==='trip-geo'){let geo;try{geo=JSON.parse(e.value);}catch(_){return reply({error:'invalid-geofence-event'},400);}if(!/^geo_[a-f0-9]{20}$/.test(geo.zone||'')||!['enter','exit'].includes(geo.transition))return reply({error:'invalid-geofence-event'},400);geoEvents.push({...geo,id:e.id,at:e.at});}
+    const payload=JSON.stringify(events),geoPayload=JSON.stringify(geoEvents);
+    const statements=[
+     env.DB.prepare("INSERT OR IGNORE INTO events(id,key,value,at,received,room_id) SELECT json_extract(value,'$.id'),json_extract(value,'$.key'),json_extract(value,'$.value'),json_extract(value,'$.at'),?,? FROM json_each(?)").bind(now,user.room_id,payload),
+     env.DB.prepare("INSERT INTO state(room_id,key,value,at) SELECT ?,json_extract(value,'$.key'),json_extract(value,'$.value'),json_extract(value,'$.at') FROM json_each(?) WHERE true ON CONFLICT(room_id,key) DO UPDATE SET value=excluded.value,at=excluded.at WHERE excluded.at>=state.at").bind(user.room_id,payload)
+    ];if(geoEvents.length){statements.push(
+     env.DB.prepare("UPDATE messages SET due=? WHERE room_id=? AND cancelled=0 AND due>? AND (json_extract(body,'$.trigger.afterMessage') IS NULL OR EXISTS(SELECT 1 FROM messages prior WHERE prior.id=json_extract(messages.body,'$.trigger.afterMessage') AND prior.room_id=messages.room_id AND prior.due<? AND prior.cancelled=0)) AND EXISTS(SELECT 1 FROM json_each(?) incoming WHERE created<=json_extract(incoming.value,'$.at') AND COALESCE(json_extract(body,'$.trigger.notBefore'),0)<=json_extract(incoming.value,'$.at') AND COALESCE(json_extract(body,'$.trigger.notAfter'),4102444800000)>=json_extract(incoming.value,'$.at') AND json_extract(body,'$.trigger.zone')=json_extract(incoming.value,'$.zone') AND json_extract(body,'$.trigger.transition')=json_extract(incoming.value,'$.transition') AND NOT EXISTS(SELECT 1 FROM geo_receipts WHERE event_id=json_extract(incoming.value,'$.id') AND room_id=messages.room_id) AND EXISTS(SELECT 1 FROM events WHERE id=json_extract(incoming.value,'$.id') AND room_id=messages.room_id))").bind(now,user.room_id,now,now,geoPayload),
+     env.DB.prepare('UPDATE push_jobs SET due=?,retry_at=0 WHERE room_id=? AND sent=0 AND message_id IN(SELECT id FROM messages WHERE room_id=? AND due=?)').bind(now,user.room_id,user.room_id,now),
+     env.DB.prepare("INSERT OR IGNORE INTO geo_receipts(room_id,event_id) SELECT ?,json_extract(value,'$.id') FROM json_each(?)").bind(user.room_id,geoPayload)
+    );}
     await env.DB.batch(statements);if(ctx&&events.some(e=>e.key==='trip-geo'))ctx.waitUntil(drainPush(env,user.room_id));return reply({accepted:events.map(e=>e.id)});
    }
    if(url.pathname==='/api/state'&&request.method==='GET'){
