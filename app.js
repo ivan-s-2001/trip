@@ -509,7 +509,9 @@ function renderAction(item,locked){
     if(localStorage.getItem(`trip-opened-${item.id}`)==="1")return;
     $("text").textContent="";
     mount.innerHTML='<button class="hold-button gift-hold" id="openGift" type="button"><span class="hold-ring"><span class="bi-icon bi-heart-fill" aria-hidden="true"></span></span><span><strong>Открыть подарок</strong><br><small>удерживай две секунды</small></span></button>';
-    setupHold($("openGift"),()=>{localStorage.setItem(`trip-opened-${item.id}`,"1");renderedMoment="";renderMoment();});return;
+    const reveal=()=>{localStorage.setItem(`trip-opened-${item.id}`,"1");renderedMoment="";renderMoment();};
+    setupHold($("openGift"),reveal);
+    if(qa()){const preview=document.createElement("button");preview.type="button";preview.className="primary";preview.textContent="QA: показать содержимое";preview.addEventListener("click",reveal);mount.append(preview);}return;
   }
   if(item.type==="hug-seconds"){
     const key="trip-hug-seconds";
@@ -835,7 +837,7 @@ function setup(){
     saveShared("trip-home-arrived","1");
     view={day:null,index:0,forced:false};sync();toast("Мы снова вместе ♥");
   });
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden){sync();refreshForegroundLocation();}});
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden){if(qa() && view.forced){renderPhase();renderMoment();}else sync();refreshForegroundLocation();}});
   setupQa();
 
   if(!handleIncoming()){if(qa())setMoment(10,0,{forced:true});else sync();}
